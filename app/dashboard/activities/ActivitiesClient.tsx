@@ -56,6 +56,11 @@ type FormData = {
   type_tag: string
   duration_min: string
   grade_level_tags: string[]
+  trigger_text: string
+  open_question: string
+  expected_strategies: string
+  observation_criteria: string
+  pda_link: string
 }
 
 type Props = {
@@ -71,6 +76,7 @@ type Props = {
 
 const EMPTY_FORM: FormData = {
   title: '', description: '', subject_id: '', type_tag: '', duration_min: '', grade_level_tags: [],
+  trigger_text: '', open_question: '', expected_strategies: '', observation_criteria: '', pda_link: '',
 }
 
 const GRADE_LEVELS = [
@@ -228,6 +234,26 @@ function ActivityForm({
       <textarea value={data.description} onChange={e => onFieldChange('description', e.target.value)}
         placeholder="Description, notes, matériel nécessaire…" rows={3}
         className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2.5 focus:outline-none focus:border-indigo-300 resize-none bg-gray-50" />
+
+      <details className="group">
+        <summary className="text-xs font-semibold text-indigo-500 cursor-pointer select-none list-none flex items-center gap-1 hover:text-indigo-700 transition">
+          <span className="group-open:rotate-90 inline-block transition-transform">▶</span> Détails pédagogiques (optionnel)
+        </summary>
+        <div className="mt-3 space-y-2.5">
+          {([
+            ['trigger_text', 'Amorce / Déclencheur'],
+            ['open_question', 'Question ouverte'],
+            ['expected_strategies', 'Stratégies attendues'],
+            ['observation_criteria', "Critères d'observation"],
+            ['pda_link', 'Lien avec le PDA'],
+          ] as [keyof FormData, string][]).map(([field, label]) => (
+            <textarea key={field} value={data[field] as string} onChange={e => onFieldChange(field, e.target.value)}
+              placeholder={label} rows={2}
+              className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2.5 focus:outline-none focus:border-indigo-300 resize-none bg-gray-50" />
+          ))}
+        </div>
+      </details>
+
       <div className="flex justify-end gap-2 pt-1">
         <button type="button" onClick={onCancel}
           className="px-4 py-2 rounded-xl text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition font-medium">
@@ -304,7 +330,7 @@ function ContentDropdown({ items, selected, onChange }: {
   )
 }
 
-// ── Activity detail modal ──────────────────────────────────────
+// ── Activity detail modal (unified dark format) ────────────────
 
 function ActivityDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isUploading, onOpenFile, onEdit, contentItems, gradeLevels }: {
   activity: Activity
@@ -321,98 +347,107 @@ function ActivityDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isU
   const linkedItems = contentItems.filter(ci => activity.content_item_ids.includes(ci.id))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-8"
-      style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto backdrop-blur-sm p-4 pt-8"
+      style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="relative w-full max-w-xl rounded-2xl shadow-2xl bg-white mb-8">
-        <div className="h-1.5 rounded-t-2xl" style={{ backgroundColor: color }} />
+      <div className="relative w-full max-w-2xl rounded-2xl shadow-2xl mb-8" style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
 
-        <div className="flex items-start gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
+        <div className="flex items-start gap-4 p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap gap-1.5 mb-1.5">
-              {activity.grade_level_ids.length > 0
-                ? activity.grade_level_ids.map(id => {
-                    const gl = gradeLevels.find(g => g.id === id)
-                    return gl ? <span key={id} className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{gl.label_fr}</span> : null
-                  })
-                : activity.grade_level_tag && (
-                    <span className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500">{activity.grade_level_tag}</span>
-                  )
-              }
-              {activity.type_tag && (
-                <span className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{activity.type_tag}</span>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {activity.subject && (
+                <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${color}25`, color }}>
+                  {activity.subject.name_fr}
+                </span>
               )}
+              {activity.type_tag && (
+                <span className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#9ca3af' }}>
+                  {activity.type_tag}
+                </span>
+              )}
+              {(activity.grade_level_ids.length > 0 ? gradeLevels.filter(gl => activity.grade_level_ids.includes(gl.id)).map(gl => gl.label_fr) : activity.grade_level_tag ? [activity.grade_level_tag] : []).map(label => (
+                <span key={label} className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>
+                  {label}
+                </span>
+              ))}
               {activity.duration_min != null && (
-                <span className="text-[0.65rem] text-gray-400 ml-auto">⏱ {activity.duration_min} min</span>
+                <span className="text-[0.65rem] ml-auto" style={{ color: '#6b7280' }}>⏱ {activity.duration_min} min</span>
               )}
             </div>
-            <h2 className="text-lg font-bold text-gray-800 leading-snug">{activity.title}</h2>
-            {activity.subject && (
-              <p className="text-xs mt-0.5 font-medium" style={{ color }}>{activity.subject.name_fr}</p>
-            )}
+            <h2 className="text-xl font-bold leading-snug" style={{ color: '#f9fafb' }}>{activity.title}</h2>
           </div>
-          <button onClick={onClose} className="shrink-0 text-gray-400 hover:text-gray-600 text-2xl leading-none mt-0.5 transition">×</button>
+          <button onClick={onClose} className="shrink-0 transition text-2xl leading-none mt-0.5" style={{ color: '#6b7280' }}>×</button>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
-          {activity.description && (
+        <div className="p-6 space-y-5">
+          <DetailSection label="Description" content={activity.description} />
+          <DetailSection label="Amorce / Déclencheur" content={activity.trigger_text} />
+          <DetailSection label="Question ouverte" content={activity.open_question} />
+          <DetailSection label="Stratégies attendues" content={activity.expected_strategies} />
+          <DetailSection label="Critères d'observation" content={activity.observation_criteria} />
+          {activity.pda_link && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1.5">Description</p>
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{activity.description}</p>
+              <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: '#6b7280' }}>Lien avec le PDA</p>
+              <p className="text-xs leading-relaxed italic" style={{ color: '#5eead4' }}>{activity.pda_link}</p>
             </div>
           )}
 
           {linkedItems.length > 0 && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Contenus associés</p>
+            <div className="pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b7280' }}>Contenus associés</p>
               <div className="space-y-1">
                 {linkedItems.map(ci => (
                   <div key={ci.id} className="flex items-start gap-2">
                     {ci.grade_levels?.label_fr && (
-                      <span className="text-[0.6rem] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-400 shrink-0 mt-0.5">{ci.grade_levels.label_fr}</span>
+                      <span className="text-[0.6rem] font-semibold px-1 py-0.5 rounded shrink-0 mt-0.5" style={{ backgroundColor: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>{ci.grade_levels.label_fr}</span>
                     )}
-                    <span className="text-xs text-gray-600 leading-snug">{ci.name_fr}</span>
+                    <span className="text-xs leading-snug" style={{ color: '#d1d5db' }}>{ci.name_fr}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Matériel joint</p>
+          <div className="pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6b7280' }}>Matériel joint</p>
               {isUploading
-                ? <span className="text-xs text-gray-400 animate-pulse">Chargement…</span>
+                ? <span className="text-xs font-medium" style={{ color: '#6b7280' }}>Chargement…</span>
                 : <button type="button"
                     onClick={() => pickFiles(true, files => files.forEach(f => onUploadFile(f)))}
-                    className="text-xs font-medium text-indigo-500 hover:text-indigo-700 transition">
-                    + Ajouter un fichier
+                    className="text-xs font-medium transition"
+                    style={{ color: '#2dd4bf' }}>
+                    + Joindre un fichier
                   </button>
               }
             </div>
             {activity.attachments.length === 0 && (
-              <p className="text-xs text-gray-400">Aucun fichier joint</p>
+              <p className="text-xs" style={{ color: '#4b5563' }}>Aucun fichier joint · PDF, PowerPoint, Word, images (max 50 Mo)</p>
             )}
             {activity.attachments.map(att => (
               <div key={att.id} className="flex items-center gap-2 group py-1">
                 <span className="text-sm">{fileIcon(att.file_type)}</span>
                 <button onClick={() => onOpenFile(att.file_path)}
-                  className="flex-1 text-left text-sm text-gray-600 hover:text-indigo-600 truncate transition">
+                  className="flex-1 text-left text-sm truncate transition" style={{ color: '#d1d5db' }}>
                   {att.file_name}
                 </button>
-                {att.file_size != null && <span className="text-xs text-gray-400 shrink-0">{formatSize(att.file_size)}</span>}
+                {att.file_size != null && <span className="text-xs shrink-0" style={{ color: '#4b5563' }}>{formatSize(att.file_size)}</span>}
                 <button onClick={() => onDeleteAtt(att.id, att.file_path)}
-                  className="text-gray-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100 shrink-0 text-base leading-none">×</button>
+                  className="hover:text-red-400 transition opacity-0 group-hover:opacity-100 shrink-0 text-base leading-none" style={{ color: '#374151' }}>×</button>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 px-6 pb-5">
+        <div className="flex items-center justify-between px-6 pb-6">
           <button onClick={() => { onClose(); onEdit() }}
-            className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+            className="px-4 py-2 rounded-xl text-sm font-medium transition" style={{ color: '#9ca3af', backgroundColor: 'rgba(255,255,255,0.06)' }}>
             Modifier
           </button>
+          <a href={`/dashboard/activities/present/${activity.id}`} target="_blank" rel="noopener noreferrer"
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-teal-600 hover:bg-teal-500 transition">
+            ▶ Présenter en classe
+          </a>
         </div>
       </div>
     </div>
@@ -703,8 +738,11 @@ export default function ActivitiesClient({ activities: initial, templates: initi
       attachments:     [],
       created_at:      new Date().toISOString(),
       is_template:     false, category: null,
-      trigger_text: null, open_question: null,
-      expected_strategies: null, observation_criteria: null, pda_link: null,
+      trigger_text: createForm.trigger_text.trim() || null,
+      open_question: createForm.open_question.trim() || null,
+      expected_strategies: createForm.expected_strategies.trim() || null,
+      observation_criteria: createForm.observation_criteria.trim() || null,
+      pda_link: createForm.pda_link.trim() || null,
     }
     setActivities(prev => [activity, ...prev])
     setCreateForm(EMPTY_FORM); setCreateContentIds([]); setCreatePendingFiles([]); setShowCreate(false)
@@ -713,7 +751,8 @@ export default function ActivitiesClient({ activities: initial, templates: initi
     try {
       const glIds = gradeLevels.filter(gl => createForm.grade_level_tags.includes(gl.label_fr)).map(gl => gl.id)
       await createActivity(id, activity.title, activity.description, activity.subject_id,
-        activity.type_tag, activity.duration_min, activity.grade_level_tag, activity.content_item_ids, glIds)
+        activity.type_tag, activity.duration_min, activity.grade_level_tag, activity.content_item_ids, glIds,
+        activity.trigger_text, activity.open_question, activity.expected_strategies, activity.observation_criteria, activity.pda_link)
       if (glIds.length > 0) setActivities(prev => prev.map(a => a.id === id ? { ...a, grade_level_ids: glIds } : a))
       if (filesToUpload.length > 0) {
         const atts: Attachment[] = []
@@ -744,6 +783,11 @@ export default function ActivitiesClient({ activities: initial, templates: initi
         subject_id: activity.subject_id != null ? String(activity.subject_id) : '',
         type_tag: activity.type_tag ?? '', grade_level_tags: existingTags,
         duration_min: activity.duration_min != null ? String(activity.duration_min) : '',
+        trigger_text: activity.trigger_text ?? '',
+        open_question: activity.open_question ?? '',
+        expected_strategies: activity.expected_strategies ?? '',
+        observation_criteria: activity.observation_criteria ?? '',
+        pda_link: activity.pda_link ?? '',
       },
     }))
     setEditContentIds(prev => ({ ...prev, [activity.id]: activity.content_item_ids }))
@@ -762,11 +806,17 @@ export default function ActivitiesClient({ activities: initial, templates: initi
       grade_level_tag: form.grade_level_tags[0] ?? null,
       grade_level_ids: glIds,
       duration_min: form.duration_min ? parseInt(form.duration_min) : null, content_item_ids: ids,
+      trigger_text: form.trigger_text.trim() || null,
+      open_question: form.open_question.trim() || null,
+      expected_strategies: form.expected_strategies.trim() || null,
+      observation_criteria: form.observation_criteria.trim() || null,
+      pda_link: form.pda_link.trim() || null,
     }
     setActivities(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a))
     setEditingId(null)
     await updateActivity(id, updates.title, updates.description, updates.subject_id,
-      updates.type_tag, updates.duration_min, updates.grade_level_tag, updates.content_item_ids, glIds)
+      updates.type_tag, updates.duration_min, updates.grade_level_tag, updates.content_item_ids, glIds,
+      updates.trigger_text, updates.open_question, updates.expected_strategies, updates.observation_criteria, updates.pda_link)
   }
 
   async function handleDelete(id: string) {

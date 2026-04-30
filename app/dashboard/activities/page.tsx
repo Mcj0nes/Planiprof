@@ -32,7 +32,7 @@ export default async function ActivitiesPage() {
   // User's own activities with subject + content item links + grade level links
   const { data: rawActivities } = await supabase
     .from('activities')
-    .select('id, title, description, subject_id, type_tag, duration_min, grade_level_tag, created_at, subjects(id, name_fr, color), activity_content_items(content_item_id), activity_grade_levels(grade_level_id)')
+    .select('id, title, description, subject_id, type_tag, duration_min, grade_level_tag, trigger_text, open_question, expected_strategies, observation_criteria, pda_link, created_at, subjects(id, name_fr, color), activity_content_items(content_item_id), activity_grade_levels(grade_level_id)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -67,11 +67,11 @@ export default async function ActivitiesPage() {
     created_at:      a.created_at,
     is_template:     false,
     category:        null as string | null,
-    trigger_text:         null as string | null,
-    open_question:        null as string | null,
-    expected_strategies:  null as string | null,
-    observation_criteria: null as string | null,
-    pda_link:             null as string | null,
+    trigger_text:         a.trigger_text         ?? null,
+    open_question:        a.open_question        ?? null,
+    expected_strategies:  a.expected_strategies  ?? null,
+    observation_criteria: a.observation_criteria ?? null,
+    pda_link:             a.pda_link             ?? null,
   }))
 
   // Pre-loaded activity templates (with pedagogical detail fields)

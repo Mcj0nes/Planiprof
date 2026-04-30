@@ -12,6 +12,11 @@ export async function createActivity(
   gradeLevelTag: string | null,
   contentItemIds: number[],
   gradeLevelIds: number[] = [],
+  triggerText: string | null = null,
+  openQuestion: string | null = null,
+  expectedStrategies: string | null = null,
+  observationCriteria: string | null = null,
+  pdaLink: string | null = null,
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -21,6 +26,9 @@ export async function createActivity(
     id, user_id: user.id, title, description,
     subject_id: subjectId, type_tag: typeTag,
     duration_min: durationMin, grade_level_tag: gradeLevelTag,
+    trigger_text: triggerText, open_question: openQuestion,
+    expected_strategies: expectedStrategies, observation_criteria: observationCriteria,
+    pda_link: pdaLink,
   })
   if (error) throw new Error(`Impossible de créer l'activité : ${error.message} (code ${error.code})`)
 
@@ -48,6 +56,11 @@ export async function updateActivity(
   gradeLevelTag: string | null,
   contentItemIds: number[],
   gradeLevelIds: number[] = [],
+  triggerText: string | null = null,
+  openQuestion: string | null = null,
+  expectedStrategies: string | null = null,
+  observationCriteria: string | null = null,
+  pdaLink: string | null = null,
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -57,6 +70,9 @@ export async function updateActivity(
     .update({
       title, description, subject_id: subjectId, type_tag: typeTag,
       duration_min: durationMin, grade_level_tag: gradeLevelTag,
+      trigger_text: triggerText, open_question: openQuestion,
+      expected_strategies: expectedStrategies, observation_criteria: observationCriteria,
+      pda_link: pdaLink,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id).eq('user_id', user.id)
