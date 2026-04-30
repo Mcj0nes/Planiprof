@@ -632,6 +632,7 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   const [detailActivity, setDetailActivity]     = useState<Activity | null>(null)
   const [detailRegular, setDetailRegular]       = useState<Activity | null>(null)
   const [uploadError, setUploadError]           = useState<string | null>(null)
+  const [hoveredCardId, setHoveredCardId]       = useState<string | null>(null)
 
   function setSubjectFilter(id: number | null) {
     setSubjectFilterRaw(id)
@@ -846,6 +847,27 @@ export default function ActivitiesClient({ activities: initial, templates: initi
       )
     : []
 
+  function getSuggestions(activity: Activity): ContentItem[] {
+    if (!activity.subject_id) return []
+    const activityGrades = activity.grade_level_ids.length > 0
+      ? gradeLevels.filter(gl => activity.grade_level_ids.includes(gl.id)).map(gl => gl.label_fr)
+      : activity.grade_level_tag ? [activity.grade_level_tag] : []
+    return contentItems
+      .filter(ci => {
+        if (ci.competencies?.subject_id !== activity.subject_id) return false
+        if (activity.content_item_ids.includes(ci.id)) return false
+        if (activityGrades.length > 0 && ci.grade_levels?.label_fr) {
+          return activityGrades.some(g =>
+            g === ci.grade_levels?.label_fr ||
+            (g === '3e-4e année' && (ci.grade_levels?.label_fr === '3e année' || ci.grade_levels?.label_fr === '4e année')) ||
+            (g === '5e-6e année' && (ci.grade_levels?.label_fr === '5e année' || ci.grade_levels?.label_fr === '6e année'))
+          )
+        }
+        return true
+      })
+      .slice(0, 5)
+  }
+
   // Only show activities once a subject is chosen; content filter hides causeries
   const filtered = subjectFilter === null ? [] : allActivities.filter(a => {
     if (a.subject_id !== subjectFilter) return false
@@ -896,7 +918,9 @@ export default function ActivitiesClient({ activities: initial, templates: initi
           return (
             <div key={activity.id}
               className={`bg-white rounded-2xl shadow border overflow-hidden flex flex-col${!isEditing ? ' cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-              onClick={!isEditing ? () => activity.is_template ? setDetailActivity(activity) : setDetailRegular(activity) : undefined}>
+              onClick={!isEditing ? () => activity.is_template ? setDetailActivity(activity) : setDetailRegular(activity) : undefined}
+              onMouseEnter={() => !isEditing && setHoveredCardId(activity.id)}
+              onMouseLeave={() => setHoveredCardId(null)}>
               <div className="h-1.5 shrink-0" style={{ backgroundColor: activity.is_template ? '#0d9488' : color }} />
               <div className="p-4 flex flex-col flex-1">
                 {isEditing ? (
@@ -1052,6 +1076,26 @@ export default function ActivitiesClient({ activities: initial, templates: initi
                         </>
                       )}
                     </div>
+
+                    {hoveredCardId === activity.id && (() => {
+                      const suggestions = getSuggestions(activity)
+                      if (suggestions.length === 0) return null
+                      return (
+                        <div onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-indigo-50">
+                          <p className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-400 mb-1.5">✨ Contenus PDA suggérés</p>
+                          <div className="space-y-1">
+                            {suggestions.map(ci => (
+                              <div key={ci.id} className="flex items-start gap-1.5">
+                                {ci.grade_levels?.label_fr && (
+                                  <span className="text-[0.55rem] font-semibold px-1 py-0.5 rounded bg-indigo-50 text-indigo-400 shrink-0 mt-0.5">{ci.grade_levels.label_fr}</span>
+                                )}
+                                <span className="text-[0.65rem] text-gray-500 leading-snug">{ci.name_fr}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </>
                 )}
               </div>
