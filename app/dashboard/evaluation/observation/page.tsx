@@ -78,7 +78,7 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
   ],
   'arts-plastiques': [
     {
-      label:          'Arts plastiques',
+      label:          'Grille : Créer',
       href:           '/dashboard/evaluation/observation/arts-plastiques-1er-cycle',
       cycle:          '1er cycle du primaire (1re et 2e année)',
       description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
@@ -86,7 +86,15 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       grades:         [1, 2],
     },
     {
-      label:          'Arts plastiques',
+      label:          'Grille : Apprécier',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Grille : Créer',
       href:           '/dashboard/evaluation/observation/arts-plastiques-2e-cycle',
       cycle:          '2e cycle du primaire (3e et 4e année)',
       description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
@@ -94,8 +102,24 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       grades:         [3, 4],
     },
     {
-      label:          'Arts plastiques',
+      label:          'Grille : Apprécier',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Grille : Créer',
       href:           '/dashboard/evaluation/observation/arts-plastiques-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+    {
+      label:          'Grille : Apprécier',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-3e-cycle',
       cycle:          '3e cycle du primaire (5e et 6e année)',
       description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
       educationLevel: 'primaire',
