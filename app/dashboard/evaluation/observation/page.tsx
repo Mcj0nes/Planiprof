@@ -78,6 +78,16 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       grades:         [5, 6],
     },
   ],
+  anglais: [
+    {
+      label:          'Interacts orally in English',
+      href:           '/dashboard/evaluation/observation/anglais-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation interactive — 5 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+  ],
   francais: [
     {
       label:          'Grille : Oral',
