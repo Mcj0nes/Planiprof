@@ -166,6 +166,30 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
   ],
   francais: [
     {
+      label:          'Grille : Lecture',
+      href:           '/dashboard/evaluation/observation/lecture-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Grille : Lecture',
+      href:           '/dashboard/evaluation/observation/lecture-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Grille : Lecture',
+      href:           '/dashboard/evaluation/observation/lecture-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+    {
       label:          'Grille : Oral',
       href:           '/dashboard/evaluation/observation/exposes-oraux-1er-cycle',
       cycle:          '1er cycle du primaire (1re et 2e année)',
