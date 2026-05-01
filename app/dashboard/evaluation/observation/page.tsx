@@ -112,6 +112,32 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       grades:         [5, 6],
     },
   ],
+  'educ-physique': [
+    {
+      label:          'Éducation physique et à la santé',
+      href:           '/dashboard/evaluation/observation/eps-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Éducation physique et à la santé',
+      href:           '/dashboard/evaluation/observation/eps-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Éducation physique et à la santé',
+      href:           '/dashboard/evaluation/observation/eps-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+  ],
   ccq: [
     {
       label:          'Culture et citoyenneté québécoise',
@@ -198,7 +224,6 @@ export default async function ObservationPage({
   const selectedGrade   = gradeLevels?.find(g => g.id === gradeId)
 
   const tools = getToolsForGrade(selectedSubject?.slug, selectedGrade as any)
-  console.log('DEBUG slug:', selectedSubject?.slug, '| grade:', selectedGrade?.grade, '| tools:', tools.length)
 
   // Custom grids for the selected subject+grade
   let customDefs: { id: string; title: string; criteria: any[] }[] = []
