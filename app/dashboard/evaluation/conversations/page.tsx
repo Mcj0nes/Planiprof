@@ -70,9 +70,23 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
   ],
 }
 
-function getConvObsTools(slug: string | undefined, grade: { education_level: string; grade: number } | undefined): ConvObsTool[] {
-  if (!slug || !grade) return []
-  return (CONVERSATION_OBS_TOOLS[slug] ?? []).filter(
+const NAME_TO_KEY: Record<string, string> = {
+  'Sciences et technologie': 'sciences',
+  'Sciences': 'sciences',
+  'Univers social': 'univers-social',
+  'Musique': 'musique',
+}
+
+function getConvObsTools(
+  slug: string | null | undefined,
+  nameFr: string | null | undefined,
+  grade: { education_level: string; grade: number } | undefined,
+): ConvObsTool[] {
+  if (!grade) return []
+  const key = (slug && CONVERSATION_OBS_TOOLS[slug]) ? slug
+    : (nameFr ? NAME_TO_KEY[nameFr] : undefined)
+  if (!key) return []
+  return (CONVERSATION_OBS_TOOLS[key] ?? []).filter(
     t => t.educationLevel === grade.education_level && t.grades.includes(grade.grade),
   )
 }
