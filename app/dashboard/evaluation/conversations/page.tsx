@@ -14,6 +14,16 @@ type ConvObsTool = {
 }
 
 const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
+  maths: [
+    {
+      label:          'Conversation orale — Mathématique',
+      href:           '/dashboard/evaluation/observation/maths-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation — 5 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+  ],
   sciences: [
     {
       label:          'Conversation orale — Sciences',
@@ -103,6 +113,7 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
 }
 
 const NAME_TO_KEY: Record<string, string> = {
+  'Mathématique': 'maths',
   'Sciences et technologie': 'sciences',
   'Sciences': 'sciences',
   'Univers social': 'univers-social',
