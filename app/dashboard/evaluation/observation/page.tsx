@@ -17,6 +17,22 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
   maths: [
     {
       label:          'Causeries mathématiques',
+      href:           '/dashboard/evaluation/observation/causeries-mathematiques-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation interactive — 7 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Causeries mathématiques',
+      href:           '/dashboard/evaluation/observation/causeries-mathematiques-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation interactive — 7 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Causeries mathématiques',
       href:           '/dashboard/evaluation/observation/causeries-mathematiques',
       cycle:          '3e cycle du primaire (5e et 6e année)',
       description:    'Grille d\'observation interactive — 7 critères, niveaux 1 à 4',
