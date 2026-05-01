@@ -317,6 +317,14 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       educationLevel: 'primaire',
       grades:         [5, 6],
     },
+    {
+      label:          'Grille : Oral (apprécier)',
+      href:           '/dashboard/evaluation/observation/musique-apprecier-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
   ],
   francais: [
     {
