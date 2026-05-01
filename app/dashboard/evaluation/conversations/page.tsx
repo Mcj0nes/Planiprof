@@ -142,7 +142,7 @@ export default async function ConversationsPage({
 
   const selectedSubject = (subjects as any[])?.find((s: any) => s.id === subjectId)
   const selectedGrade   = gradeLevels?.find(g => g.id === gradeId)
-  const convObsTools    = getConvObsTools(selectedSubject?.slug, selectedGrade as any)
+  const convObsTools    = getConvObsTools(selectedSubject?.slug, selectedSubject?.name_fr, selectedGrade as any)
 
   return (
     <main className="min-h-screen">
