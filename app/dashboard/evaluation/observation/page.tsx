@@ -83,6 +83,14 @@ const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
       educationLevel: 'primaire',
       grades:         [5, 6],
     },
+    {
+      label:          'Grille : Oral (conversation)',
+      href:           '/dashboard/evaluation/observation/univers-social-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation interactive — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
   ],
   'arts-plastiques': [
     {
