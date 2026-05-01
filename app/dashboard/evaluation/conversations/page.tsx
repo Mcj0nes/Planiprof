@@ -53,6 +53,14 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
   musique: [
     {
       label:          'Conversation orale — Musique (Apprécier)',
+      href:           '/dashboard/evaluation/observation/musique-apprecier-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Musique (Apprécier)',
       href:           '/dashboard/evaluation/observation/musique-apprecier-conversation-2e-cycle',
       cycle:          '2e cycle du primaire (3e et 4e année)',
       description:    'Grille d\'observation — 7 critères, niveaux 1 à 4',
