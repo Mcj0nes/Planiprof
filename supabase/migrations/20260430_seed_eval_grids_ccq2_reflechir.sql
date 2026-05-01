@@ -11,7 +11,7 @@ DECLARE
   c1 uuid; c2 uuid; c3 uuid; c4 uuid; c5 uuid; c6 uuid;
 BEGIN
 
-  SELECT id INTO ccq_id FROM subjects WHERE slug = 'culture-citoyennete-quebecoise';
+  SELECT id INTO ccq_id FROM subjects WHERE slug = 'ccq';
   SELECT id INTO p3 FROM grade_levels WHERE education_level = 'primaire' AND grade = 3;
   SELECT id INTO p4 FROM grade_levels WHERE education_level = 'primaire' AND grade = 4;
 
