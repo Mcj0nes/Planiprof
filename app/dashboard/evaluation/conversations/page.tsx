@@ -17,6 +17,22 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
   maths: [
     {
       label:          'Conversation orale — Mathématique',
+      href:           '/dashboard/evaluation/observation/maths-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation — 5 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Mathématique',
+      href:           '/dashboard/evaluation/observation/maths-conversation-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation — 5 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Conversation orale — Mathématique',
       href:           '/dashboard/evaluation/observation/maths-conversation-3e-cycle',
       cycle:          '3e cycle du primaire (5e et 6e année)',
       description:    'Grille d\'observation — 5 critères, niveaux 1 à 4',
@@ -54,6 +70,16 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
     {
       label:          'Conversation orale — Univers social',
       href:           '/dashboard/evaluation/observation/univers-social-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+  ],
+  'arts-plastiques': [
+    {
+      label:          'Conversation orale — Arts plastiques (Créer)',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-creer-conversation-3e-cycle',
       cycle:          '3e cycle du primaire (5e et 6e année)',
       description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
       educationLevel: 'primaire',
@@ -118,6 +144,7 @@ const NAME_TO_KEY: Record<string, string> = {
   'Sciences': 'sciences',
   'Univers social': 'univers-social',
   'Musique': 'musique',
+  'Arts plastiques': 'arts-plastiques',
 }
 
 function getConvObsTools(
