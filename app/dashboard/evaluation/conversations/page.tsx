@@ -126,6 +126,32 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
       grades:         [5, 6],
     },
   ],
+  francais: [
+    {
+      label:          'Conversation orale — Français (Écriture)',
+      href:           '/dashboard/evaluation/observation/francais-ecriture-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Français (Écriture)',
+      href:           '/dashboard/evaluation/observation/francais-ecriture-conversation-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Conversation orale — Français (Écriture)',
+      href:           '/dashboard/evaluation/observation/francais-ecriture-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+  ],
   'educ-physique': [
     {
       label:          'Conversation orale — Éducation physique',
@@ -239,6 +265,7 @@ const NAME_TO_KEY: Record<string, string> = {
   'Arts plastiques': 'arts-plastiques',
   'Culture et citoyenneté québécoise': 'ccq',
   'Éducation physique': 'educ-physique',
+  'Français': 'francais',
 }
 
 function getConvObsTools(
