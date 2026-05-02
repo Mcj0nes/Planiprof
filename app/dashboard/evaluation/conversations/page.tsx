@@ -102,6 +102,32 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
       grades:         [5, 6],
     },
   ],
+  ccq: [
+    {
+      label:          'Conversation orale — Culture et citoyenneté québécoise',
+      href:           '/dashboard/evaluation/observation/ccq-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Culture et citoyenneté québécoise',
+      href:           '/dashboard/evaluation/observation/ccq-conversation-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Conversation orale — Culture et citoyenneté québécoise',
+      href:           '/dashboard/evaluation/observation/ccq-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+  ],
   musique: [
     {
       label:          'Conversation orale — Musique (Apprécier)',
@@ -161,6 +187,7 @@ const NAME_TO_KEY: Record<string, string> = {
   'Univers social': 'univers-social',
   'Musique': 'musique',
   'Arts plastiques': 'arts-plastiques',
+  'Culture et citoyenneté québécoise': 'ccq',
 }
 
 function getConvObsTools(
