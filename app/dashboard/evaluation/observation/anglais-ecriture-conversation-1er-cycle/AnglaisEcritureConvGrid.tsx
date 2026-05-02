@@ -432,7 +432,7 @@ const CRITERIA_FULL: {
     label: 'Writing Intention',
     sub: 'Explaining why and for whom the text is written',
     levels: {
-      4: 'Clearly explains the purpose of their writing and names the intended audience (e.g., "I'm writing a story to make my friends laugh").',
+      4: `Clearly explains the purpose of their writing and names the intended audience (e.g., "I'm writing a story to make my friends laugh").`,
       3: 'States the intention with some hesitation.',
       2: 'Names the type of text without explaining the purpose.',
       1: 'Has difficulty explaining why they are writing.',
@@ -454,7 +454,7 @@ const CRITERIA_FULL: {
     label: 'Word Choices',
     sub: 'Reflecting on vocabulary selected for the text',
     levels: {
-      4: 'Explains why certain words were chosen (e.g., "I used 'enormous' because it was very big"); shows awareness of vocabulary.',
+      4: `Explains why certain words were chosen (e.g., "I used 'enormous' because it was very big"); shows awareness of vocabulary.`,
       3: 'Talks about word choices with some hesitation.',
       2: 'Repeats words from the text without explaining the selection.',
       1: 'Cannot talk about word choices.',
