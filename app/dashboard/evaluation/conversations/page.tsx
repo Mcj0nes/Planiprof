@@ -206,6 +206,30 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
   ],
   anglais: [
     {
+      label:          'Conversation orale — Anglais (Écriture)',
+      href:           '/dashboard/evaluation/observation/anglais-ecriture-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    'Observation grid — 6 criteria, levels 1 to 4',
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Anglais (Écriture)',
+      href:           '/dashboard/evaluation/observation/anglais-ecriture-conversation-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Observation grid — 6 criteria, levels 1 to 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Conversation orale — Anglais (Écriture)',
+      href:           '/dashboard/evaluation/observation/anglais-ecriture-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Observation grid — 6 criteria, levels 1 to 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+    {
       label:          'Conversation orale — Anglais (Lecture)',
       href:           '/dashboard/evaluation/observation/anglais-lecture-conversation-1er-cycle',
       cycle:          '1er cycle du primaire (1re et 2e année)',
