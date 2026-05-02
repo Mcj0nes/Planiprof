@@ -78,6 +78,30 @@ const CONVERSATION_OBS_TOOLS: Record<string, ConvObsTool[]> = {
   ],
   'arts-plastiques': [
     {
+      label:          'Conversation orale — Arts plastiques (Apprécier)',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-conversation-1er-cycle',
+      cycle:          '1er cycle du primaire (1re et 2e année)',
+      description:    "Grille d'observation — 6 critères, niveaux 1 à 4",
+      educationLevel: 'primaire',
+      grades:         [1, 2],
+    },
+    {
+      label:          'Conversation orale — Arts plastiques (Apprécier)',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-conversation-2e-cycle',
+      cycle:          '2e cycle du primaire (3e et 4e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [3, 4],
+    },
+    {
+      label:          'Conversation orale — Arts plastiques (Apprécier)',
+      href:           '/dashboard/evaluation/observation/arts-plastiques-apprecier-conversation-3e-cycle',
+      cycle:          '3e cycle du primaire (5e et 6e année)',
+      description:    'Grille d\'observation — 6 critères, niveaux 1 à 4',
+      educationLevel: 'primaire',
+      grades:         [5, 6],
+    },
+    {
       label:          'Conversation orale — Arts plastiques (Créer)',
       href:           '/dashboard/evaluation/observation/arts-plastiques-creer-conversation-1er-cycle',
       cycle:          '1er cycle du primaire (1re et 2e année)',
