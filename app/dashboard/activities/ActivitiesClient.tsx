@@ -87,6 +87,7 @@ const GRADE_LEVELS = [
 function gradeMatches(activityTag: string | null, filterTag: string): boolean {
   if (!activityTag) return false
   if (activityTag === filterTag) return true
+  if (activityTag === '1re-2e année' && (filterTag === '1re année' || filterTag === '2e année')) return true
   if (activityTag === '3e-4e année' && (filterTag === '3e année' || filterTag === '4e année')) return true
   if (activityTag === '5e-6e année' && (filterTag === '5e année' || filterTag === '6e année')) return true
   return false
