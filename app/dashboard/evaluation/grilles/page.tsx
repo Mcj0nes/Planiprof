@@ -135,7 +135,24 @@ export default async function GrillesPage({
       </nav>
 
       <div className="max-w-4xl mx-auto px-8 py-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Grilles d&apos;évaluation</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Grilles d&apos;évaluation</h2>
+          {userPlans.length > 0 ? (
+            <Link
+              href={`/dashboard/gradebook/${userPlans[0].id}/grilles`}
+              className="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium"
+            >
+              Carnet de notes →
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/gradebook"
+              className="text-sm px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium"
+            >
+              Carnet de notes →
+            </Link>
+          )}
+        </div>
 
         <Suspense>
           <EvaluationSelector
