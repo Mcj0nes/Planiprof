@@ -71,9 +71,15 @@ export default async function GrillesOverviewPage({
           ← Carnet de notes
         </Link>
         <span className="text-white/40">/</span>
-        <h1 className="text-lg font-bold text-white">
+        <h1 className="text-lg font-bold text-white flex-1">
           Grilles d&apos;évaluation · {p.subjects?.name_fr ?? 'Toutes les matières'} · {p.grade_levels?.label_fr}
         </h1>
+        <Link
+          href={`/dashboard/annual/${planId}?tab=evaluation&section=grilles`}
+          className="text-sm px-4 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg font-medium transition"
+        >
+          + Ajouter une grille au carnet de notes
+        </Link>
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-8">

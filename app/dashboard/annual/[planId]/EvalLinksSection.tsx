@@ -48,11 +48,9 @@ export default async function EvalLinksSection({ planId, gradeId, subjectId, sec
           <span className="text-gray-300">/</span>
           <h3 className="text-lg font-semibold text-gray-800">Grilles d&apos;évaluation</h3>
           <div className="ml-auto flex items-center gap-3">
-            {evalLinks.length > 0 && (
-              <Link href={gradebookHref} className="text-sm px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition">
-                Carnet de notes →
-              </Link>
-            )}
+            <Link href={gradebookHref} className="text-sm px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition">
+              Carnet de notes →
+            </Link>
             <AddEvalGridPanel planId={planId} etapes={etapes ?? []} grids={evalGrids} />
           </div>
         </div>
