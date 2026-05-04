@@ -16,7 +16,7 @@ const MODELS = [
     title:       'Planification par étape',
     description: 'Structurez vos contenus et évaluations selon les trois étapes du bulletin scolaire.',
     tag:         'Par étape',
-    available:   false,
+    available:   true,
     colorVar:    'color-mix(in srgb, var(--color-nav) 80%, black)',
   },
   {
@@ -24,7 +24,7 @@ const MODELS = [
     title:       'Planification par thème / projet',
     description: 'Organisez votre enseignement autour de thèmes intégrateurs ou de projets interdisciplinaires.',
     tag:         'Par thèmes',
-    available:   false,
+    available:   true,
     colorVar:    'color-mix(in srgb, var(--color-nav) 75%, #047857)',
   },
   {
@@ -32,7 +32,7 @@ const MODELS = [
     title:       'Concevoir son modèle',
     description: 'Créez votre propre structure de planification sur mesure selon votre réalité de classe.',
     tag:         'Personnalisé',
-    available:   false,
+    available:   true,
     colorVar:    'color-mix(in srgb, var(--color-nav) 70%, #3730a3)',
   },
 ]
