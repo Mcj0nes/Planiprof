@@ -3,8 +3,12 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
-type Subject    = { id: number; name_fr: string }
+type Subject    = { id: number; name_fr: string; slug?: string }
 type GradeLevel = { id: number; label_fr: string; education_level: string; grade: number }
+
+const PRESCOLAIRE_SLUGS = new Set([
+  'dev-physique', 'dev-affectif', 'dev-social', 'comm-langage', 'decouverte-monde',
+])
 
 export default function EvaluationSelector({
   subjects,
@@ -42,6 +46,9 @@ export default function EvaluationSelector({
   }
 
 
+  const primaireSubjects    = subjects.filter(s => !s.slug || !PRESCOLAIRE_SLUGS.has(s.slug))
+  const prescolaireSubjects = subjects.filter(s =>  s.slug &&  PRESCOLAIRE_SLUGS.has(s.slug))
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 bg-white border rounded-2xl p-5 shadow-sm">
       <div>
@@ -53,8 +60,13 @@ export default function EvaluationSelector({
         >
           <option value="">Sélectionner...</option>
           <optgroup label="Matières">
-            {subjects.map(s => <option key={s.id} value={s.id}>{s.name_fr}</option>)}
+            {primaireSubjects.map(s => <option key={s.id} value={s.id}>{s.name_fr}</option>)}
           </optgroup>
+          {prescolaireSubjects.length > 0 && (
+            <optgroup label="Préscolaire — 5 domaines">
+              {prescolaireSubjects.map(s => <option key={s.id} value={s.id}>{s.name_fr}</option>)}
+            </optgroup>
+          )}
           <optgroup label="Autre">
             <option value="interdisciplinaire">Grilles interdisciplinaires</option>
           </optgroup>

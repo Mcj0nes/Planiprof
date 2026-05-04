@@ -14,6 +14,66 @@ type ObservationTool = {
 }
 
 const OBSERVATION_TOOLS: Record<string, ObservationTool[]> = {
+  'dev-physique': [
+    {
+      label:          'Développement physique et moteur',
+      href:           '/dashboard/evaluation/observation/prescolaire/physique',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 5 critères, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
+  'dev-affectif': [
+    {
+      label:          'Développement affectif',
+      href:           '/dashboard/evaluation/observation/prescolaire/affectif',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 4 critères, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
+  'dev-social': [
+    {
+      label:          'Développement social',
+      href:           '/dashboard/evaluation/observation/prescolaire/social',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 4 critères, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
+  'comm-langage': [
+    {
+      label:          'Communication et langage',
+      href:           '/dashboard/evaluation/observation/prescolaire/langage',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 5 critères, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
+  'decouverte-monde': [
+    {
+      label:          'Découverte du monde',
+      href:           '/dashboard/evaluation/observation/prescolaire/monde',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 5 critères, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
+  interdisciplinaire: [
+    {
+      label:          'Portrait global — 5 domaines',
+      href:           '/dashboard/evaluation/observation/prescolaire/global',
+      cycle:          'Éducation préscolaire (Maternelle 4 et 5 ans)',
+      description:    "Grille d'observation — 5 domaines, niveaux DA · EA · EC · A",
+      educationLevel: 'préscolaire',
+      grades:         [-2, -1],
+    },
+  ],
   maths: [
     {
       label:          'Causeries mathématiques',
@@ -379,13 +439,21 @@ export default async function ObservationPage({
     supabase.from('grade_levels').select('id, label_fr, education_level, grade').in('education_level', ['primaire', 'préscolaire']).order('grade'),
   ])
 
-  const subjectId = params.subjectId ? Number(params.subjectId) : null
-  const gradeId   = params.gradeId   ? Number(params.gradeId)   : null
+  const subjectIdParam      = params.subjectId ?? null
+  const isInterdisciplinary = subjectIdParam === 'interdisciplinaire'
+  const subjectId           = isInterdisciplinary ? null : (subjectIdParam ? Number(subjectIdParam) : null)
+  const gradeId             = params.gradeId ? Number(params.gradeId) : null
 
-  const selectedSubject = (subjects as any[])?.find((s: any) => s.id === subjectId)
+  type SubjectRow = { id: number; name_fr: string; slug: string }
+  const subjectList = (subjects ?? []) as SubjectRow[]
+
+  const selectedSubject = isInterdisciplinary
+    ? { id: 'interdisciplinaire' as const, name_fr: 'Grilles interdisciplinaires', slug: 'interdisciplinaire' }
+    : subjectList.find(s => s.id === subjectId)
   const selectedGrade   = gradeLevels?.find(g => g.id === gradeId)
 
-  const tools = getToolsForGrade(selectedSubject?.slug, selectedGrade as any)
+  type GradeRow = { id: number; label_fr: string; education_level: string; grade: number }
+  const tools = getToolsForGrade(selectedSubject?.slug, selectedGrade as GradeRow | undefined)
 
   // Custom grids for the selected subject+grade
   let customDefs: { id: string; title: string; criteria: any[] }[] = []
@@ -427,7 +495,7 @@ export default async function ObservationPage({
 
         <Suspense>
           <EvaluationSelector
-            subjects={(subjects ?? []) as any}
+            subjects={subjectList}
             gradeLevels={gradeLevels ?? []}
             basePath="/dashboard/evaluation/observation"
           />
