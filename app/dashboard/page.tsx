@@ -26,17 +26,15 @@ export default async function DashboardPage() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-8 py-12">
-        <div className="flex items-center gap-4 mb-1 flex-wrap">
-          <h2 className="text-3xl font-bold text-gray-800">Gagner du temps pour que l&apos;élève redevienne au centre.</h2>
-          <Link
-            href="/dashboard/planning-model"
-            className="shrink-0 text-sm font-semibold px-4 py-2 rounded-xl border-2 hover:bg-gray-50 transition"
-            style={{ borderColor: 'var(--color-nav)', color: 'var(--color-nav)' }}
-          >
-            Modèle de planification
-          </Link>
-        </div>
-        <p className="text-gray-500 mb-10">Bienvenue, {user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email}</p>
+        <h2 className="text-3xl font-bold text-gray-800 mb-1">Gagner du temps pour que l&apos;élève redevienne au centre.</h2>
+        <p className="text-gray-500 mb-5">Bienvenue, {user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email}</p>
+        <Link
+          href="/dashboard/planning-model"
+          className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border-2 bg-white hover:opacity-90 transition mb-10"
+          style={{ borderColor: 'var(--color-nav)', color: 'var(--color-nav)' }}
+        >
+          Modèle de planification →
+        </Link>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
           <Link
