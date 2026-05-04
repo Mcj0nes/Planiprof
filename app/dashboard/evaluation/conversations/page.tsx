@@ -348,25 +348,29 @@ export default async function ConversationsPage({
     supabase.from('grade_levels').select('id, label_fr, education_level, grade').in('education_level', ['primaire', 'préscolaire']).order('grade'),
   ])
 
-  const subjectId = params.subjectId ? Number(params.subjectId) : null
-  const gradeId   = params.gradeId   ? Number(params.gradeId)   : null
+  const subjectIdRaw      = params.subjectId ?? null
+  const isInterdisciplinary = subjectIdRaw === 'interdisciplinaire'
+  const subjectId = (subjectIdRaw && !isInterdisciplinary) ? Number(subjectIdRaw) : null
+  const gradeId   = params.gradeId ? Number(params.gradeId) : null
 
   let grids: { id: string; title: string; cycle_label: string | null; competency: string | null; is_baseline: boolean }[] = []
 
-  if (subjectId && gradeId) {
+  if ((subjectId || isInterdisciplinary) && gradeId) {
     const { data: gradeRows } = await supabase
       .from('eval_grid_grades').select('grid_id').eq('grade_level_id', gradeId)
     const gridIds = [...new Set(gradeRows?.map(r => r.grid_id) ?? [])]
 
     if (gridIds.length > 0) {
-      const { data } = await supabase
+      let query = supabase
         .from('eval_grids')
         .select('id, title, cycle_label, competency, is_baseline')
         .in('id', gridIds)
         .eq('grid_type', 'conversation')
-        .eq('subject_id', subjectId)
         .order('is_baseline', { ascending: false })
         .order('title')
+      const { data } = isInterdisciplinary
+        ? await query.is('subject_id', null)
+        : await query.eq('subject_id', subjectId)
       const all = (data ?? []) as typeof grids
       // Keep user versions first; deduplicate by title (user version wins over baseline)
       const seen = new Set<string>()
@@ -382,7 +386,9 @@ export default async function ConversationsPage({
     }
   }
 
-  const selectedSubject = (subjects as any[])?.find((s: any) => s.id === subjectId)
+  const selectedSubject = isInterdisciplinary
+    ? { id: 'interdisciplinaire', name_fr: 'Grilles interdisciplinaires', slug: null }
+    : (subjects as any[])?.find((s: any) => s.id === subjectId)
   const selectedGrade   = gradeLevels?.find(g => g.id === gradeId)
   const convObsTools    = getConvObsTools(selectedSubject?.slug, selectedSubject?.name_fr, selectedGrade as any)
 
