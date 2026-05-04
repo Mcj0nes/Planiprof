@@ -6,8 +6,12 @@ import { useState } from 'react'
 type Subject    = { id: number; name_fr: string; slug?: string }
 type GradeLevel = { id: number; label_fr: string; education_level: string; grade: number }
 
-const PRESCOLAIRE_SLUGS = new Set([
-  'dev-physique', 'dev-affectif', 'dev-social', 'comm-langage', 'decouverte-monde',
+const PRESCOLAIRE_NAMES = new Set([
+  'Développement physique et moteur',
+  'Développement affectif',
+  'Développement social',
+  'Communication et langage',
+  'Découverte du monde',
 ])
 
 export default function EvaluationSelector({
@@ -46,8 +50,8 @@ export default function EvaluationSelector({
   }
 
 
-  const primaireSubjects    = subjects.filter(s => !s.slug || !PRESCOLAIRE_SLUGS.has(s.slug))
-  const prescolaireSubjects = subjects.filter(s =>  s.slug &&  PRESCOLAIRE_SLUGS.has(s.slug))
+  const primaireSubjects    = subjects.filter(s => !PRESCOLAIRE_NAMES.has(s.name_fr))
+  const prescolaireSubjects = subjects.filter(s =>  PRESCOLAIRE_NAMES.has(s.name_fr))
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 bg-white border rounded-2xl p-5 shadow-sm">
