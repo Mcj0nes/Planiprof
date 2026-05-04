@@ -15,7 +15,7 @@ export default async function AnnualPlansPage() {
       .select('id, school_year, title, subjects(name_fr), grade_levels(label_fr)')
       .eq('user_id', user.id)
       .order('school_year', { ascending: false }),
-    supabase.from('subjects').select('id, name_fr, color').eq('is_active', true).order('name_fr'),
+    supabase.from('subjects').select('id, name_fr, color, slug').eq('is_active', true).order('name_fr'),
     supabase.from('grade_levels').select('id, label_fr, education_level, grade').in('education_level', ['primaire', 'préscolaire']).order('grade'),
     supabase.from('user_collaborators').select('owner_id, owner_email').eq('collaborator_id', user.id),
   ])

@@ -20,7 +20,11 @@ const SCHOOL_YEAR_OPTIONS = (() => {
   })
 })()
 
-type Subject = { id: number; name_fr: string; color: string | null }
+type Subject = { id: number; name_fr: string; color: string | null; slug?: string | null }
+
+const PRESCOLAIRE_SLUGS = new Set([
+  'dev-physique', 'dev-affectif', 'dev-social', 'comm-langage', 'decouverte-monde',
+])
 type GradeLevel = { id: number; label_fr: string; education_level: string; grade: number }
 
 export default function NewPlanForm({
@@ -73,6 +77,9 @@ export default function NewPlanForm({
     }
   }
 
+  const primaireSubjects    = subjects.filter(s => !s.slug || !PRESCOLAIRE_SLUGS.has(s.slug))
+  const prescolaireSubjects = subjects.filter(s =>  s.slug &&  PRESCOLAIRE_SLUGS.has(s.slug))
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -86,9 +93,18 @@ export default function NewPlanForm({
           >
             <option value="">Sélectionner...</option>
             <option value="multi">🔗 Toutes les matières (interdisciplinaire)</option>
-            {subjects.map(s => (
-              <option key={s.id} value={s.id}>{s.name_fr}</option>
-            ))}
+            <optgroup label="Matières">
+              {primaireSubjects.map(s => (
+                <option key={s.id} value={s.id}>{s.name_fr}</option>
+              ))}
+            </optgroup>
+            {prescolaireSubjects.length > 0 && (
+              <optgroup label="Préscolaire — 5 domaines">
+                {prescolaireSubjects.map(s => (
+                  <option key={s.id} value={s.id}>{s.name_fr}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 
