@@ -102,6 +102,7 @@ export default async function ConversationSessionPage({
             sessions={overview.sessions}
             rows={overview.rows}
             jugements={overview.jugements}
+            prescolaire={overview.prescolaire}
           />
         </div>
       </main>
@@ -135,6 +136,7 @@ export default async function ConversationSessionPage({
           etape={data.etape}
           gridId={gridId}
           gridTitle={data.gridTitle}
+          lectureCount={data.cycleLabel === 'Éducation préscolaire' ? 0 : Math.max(0, data.criteria.length - 2)}
           criteria={data.criteria}
           levels={data.levels}
           students={data.students}

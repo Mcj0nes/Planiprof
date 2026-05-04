@@ -50,6 +50,7 @@ export async function loadSession(
   etape: number | null
   gridId: string
   gridTitle: string
+  cycleLabel: string | null
   criteria: { id: string; label: string; sort_order: number }[]
   levels: { id: number; code: string; label: string; sort_order: number }[]
   students: { id: string; name: string; sort_order: number; comment: string | null }[]
@@ -60,7 +61,7 @@ export async function loadSession(
   if (!user) return null
 
   const { data: grid } = await supabase
-    .from('eval_grids').select('id, title').eq('id', gridId).single()
+    .from('eval_grids').select('id, title, cycle_label').eq('id', gridId).single()
   if (!grid) return null
 
   let query = supabase.from('conversation_sessions')
@@ -125,6 +126,7 @@ export async function loadSession(
     etape,
     gridId,
     gridTitle: grid.title,
+    cycleLabel: (grid as any).cycle_label ?? null,
     criteria: (criteria ?? []) as any[],
     levels: (levels ?? []) as any[],
     students: (students ?? []) as any[],
@@ -306,16 +308,17 @@ export async function loadOverview(
   gridId: string,
   etape: number | null,
 ): Promise<{
-  gridTitle:  string
-  sessions:   { id: string; sessionNumber: number }[]
-  rows:       { name: string; lectureAvgs: (number | null)[]; oralAvgs: (number | null)[] }[]
-  jugements:  Record<string, { lecture: string; oral: string }>
+  gridTitle:   string
+  prescolaire: boolean
+  sessions:    { id: string; sessionNumber: number }[]
+  rows:        { name: string; lectureAvgs: (number | null)[]; oralAvgs: (number | null)[] }[]
+  jugements:   Record<string, { lecture: string; oral: string }>
 } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: grid } = await supabase.from('eval_grids').select('title').eq('id', gridId).single()
+  const { data: grid } = await supabase.from('eval_grids').select('title, cycle_label').eq('id', gridId).single()
   if (!grid) return null
 
   let q = supabase.from('conversation_sessions')
@@ -323,7 +326,8 @@ export async function loadOverview(
   if (etape !== null) q = q.eq('etape', etape)
   else q = q.is('etape', null)
   const { data: sessions } = await q.order('created_at', { ascending: true })
-  if (!sessions?.length) return { gridTitle: grid.title, sessions: [], rows: [], jugements: {} }
+  const prescolaire = (grid as any).cycle_label === 'Éducation préscolaire'
+  if (!sessions?.length) return { gridTitle: grid.title, prescolaire, sessions: [], rows: [], jugements: {} }
 
   const [{ data: criteria }, { data: levels }] = await Promise.all([
     supabase.from('eval_grid_criteria').select('id, sort_order').eq('grid_id', gridId).order('sort_order'),
@@ -331,7 +335,7 @@ export async function loadOverview(
   ])
 
   const sortedCrit   = (criteria ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order)
-  const lectureCount = Math.max(0, sortedCrit.length - 2)
+  const lectureCount = prescolaire ? 0 : Math.max(0, sortedCrit.length - 2)
   const lectureCritIds = new Set(sortedCrit.slice(0, lectureCount).map((c: any) => c.id))
   const oralCritIds    = new Set(sortedCrit.slice(lectureCount).map((c: any) => c.id))
   const levelOrderMap  = new Map((levels ?? []).map((l: any) => [l.id, l.sort_order as number]))
@@ -391,9 +395,10 @@ export async function loadOverview(
   }
 
   return {
-    gridTitle:  grid.title,
-    sessions:   sessions.map((s: any, i: number) => ({ id: s.id, sessionNumber: i + 1 })),
-    rows:       [...studentData.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr')),
+    gridTitle:   grid.title,
+    prescolaire,
+    sessions:    sessions.map((s: any, i: number) => ({ id: s.id, sessionNumber: i + 1 })),
+    rows:        [...studentData.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr')),
     jugements,
   }
 }

@@ -71,12 +71,14 @@ export default function OverviewTable({
   sessions,
   rows,
   jugements: initialJugements,
+  prescolaire = false,
 }: {
-  gridId:    string
-  etape:     number | null
-  sessions:  { id: string; sessionNumber: number }[]
-  rows:      Row[]
-  jugements: Record<string, { lecture: string; oral: string }>
+  gridId:       string
+  etape:        number | null
+  sessions:     { id: string; sessionNumber: number }[]
+  rows:         Row[]
+  jugements:    Record<string, { lecture: string; oral: string }>
+  prescolaire?: boolean
 }) {
   const [jugements, setJugements] = useState(initialJugements)
   const [showPrintMenu, setShowPrintMenu] = useState(false)
@@ -149,9 +151,11 @@ export default function OverviewTable({
             <th className="p-3 bg-gray-100 border-b border-r border-gray-200 text-left font-semibold text-gray-700 sticky left-0 z-10" style={{ minWidth: 180 }}>
               Élève
             </th>
-            <th className="p-3 bg-gray-100 border-b border-r border-gray-200 font-semibold text-gray-500 text-center" style={{ width: 72 }}>
-              <span className="text-xs">Type</span>
-            </th>
+            {!prescolaire && (
+              <th className="p-3 bg-gray-100 border-b border-r border-gray-200 font-semibold text-gray-500 text-center" style={{ width: 72 }}>
+                <span className="text-xs">Type</span>
+              </th>
+            )}
             {sessions.map(s => (
               <th key={s.id} className="p-3 bg-gray-100 border-b border-r border-gray-200 font-semibold text-gray-700 text-center" style={{ width: 88 }}>
                 <span className="text-xs">Séance {s.sessionNumber}</span>
@@ -183,51 +187,75 @@ export default function OverviewTable({
                   </td>
                 </tr>
 
-                {/* Lecture row */}
-                <tr key={`${ri}-lecture`} className="bg-white">
-                  <td className="border-b border-r border-gray-200 sticky left-0 bg-white" />
-                  <td className="px-2 py-2 border-b border-r border-gray-200 text-xs font-medium text-blue-600 text-center">
-                    Lecture
-                  </td>
-                  {row.lectureAvgs.map((avg, si) => {
-                    const { text, cls } = colorCell(avg)
-                    return (
-                      <td key={si} className={`border-b border-r border-gray-200 text-center py-2 text-sm ${cls}`} style={{ width: 88 }}>
-                        {text}
+                {prescolaire ? (
+                  /* Préscolaire: single oral row, no lecture/oral split */
+                  <tr key={`${ri}-oral`} className="bg-white">
+                    <td className="border-b border-r border-gray-200 sticky left-0 bg-white" />
+                    {row.oralAvgs.map((avg, si) => {
+                      const { text, cls } = colorCell(avg)
+                      return (
+                        <td key={si} className={`border-b border-r border-gray-200 text-center py-2 text-sm ${cls}`} style={{ width: 88 }}>
+                          {text}
+                        </td>
+                      )
+                    })}
+                    <td className={`border-b border-r border-gray-200 text-center py-2 text-sm ${oralMoy.cls}`} style={{ width: 88, borderLeft: '2px solid #93c5fd' }}>
+                      {oralMoy.text}
+                    </td>
+                    <JugementCell
+                      value={jug.oral}
+                      onChange={v => handleJugement(row.name, 'oral', v)}
+                    />
+                  </tr>
+                ) : (
+                  <>
+                    {/* Lecture row */}
+                    <tr key={`${ri}-lecture`} className="bg-white">
+                      <td className="border-b border-r border-gray-200 sticky left-0 bg-white" />
+                      <td className="px-2 py-2 border-b border-r border-gray-200 text-xs font-medium text-blue-600 text-center">
+                        Lecture
                       </td>
-                    )
-                  })}
-                  <td className={`border-b border-r border-gray-200 text-center py-2 text-sm ${lectMoy.cls}`} style={{ width: 88, borderLeft: '2px solid #93c5fd' }}>
-                    {lectMoy.text}
-                  </td>
-                  <JugementCell
-                    value={jug.lecture}
-                    onChange={v => handleJugement(row.name, 'lecture', v)}
-                  />
-                </tr>
+                      {row.lectureAvgs.map((avg, si) => {
+                        const { text, cls } = colorCell(avg)
+                        return (
+                          <td key={si} className={`border-b border-r border-gray-200 text-center py-2 text-sm ${cls}`} style={{ width: 88 }}>
+                            {text}
+                          </td>
+                        )
+                      })}
+                      <td className={`border-b border-r border-gray-200 text-center py-2 text-sm ${lectMoy.cls}`} style={{ width: 88, borderLeft: '2px solid #93c5fd' }}>
+                        {lectMoy.text}
+                      </td>
+                      <JugementCell
+                        value={jug.lecture}
+                        onChange={v => handleJugement(row.name, 'lecture', v)}
+                      />
+                    </tr>
 
-                {/* Oral row */}
-                <tr key={`${ri}-oral`} className="bg-gray-50/40">
-                  <td className="border-b border-r border-gray-200 sticky left-0 bg-gray-50/40" />
-                  <td className="px-2 py-2 border-b border-r border-gray-200 text-xs font-medium text-indigo-600 text-center">
-                    Oral
-                  </td>
-                  {row.oralAvgs.map((avg, si) => {
-                    const { text, cls } = colorCell(avg)
-                    return (
-                      <td key={si} className={`border-b border-r border-gray-200 text-center py-2 text-sm ${cls}`} style={{ width: 88 }}>
-                        {text}
+                    {/* Oral row */}
+                    <tr key={`${ri}-oral`} className="bg-gray-50/40">
+                      <td className="border-b border-r border-gray-200 sticky left-0 bg-gray-50/40" />
+                      <td className="px-2 py-2 border-b border-r border-gray-200 text-xs font-medium text-indigo-600 text-center">
+                        Oral
                       </td>
-                    )
-                  })}
-                  <td className={`border-b border-r border-gray-200 text-center py-2 text-sm ${oralMoy.cls}`} style={{ width: 88, borderLeft: '2px solid #93c5fd' }}>
-                    {oralMoy.text}
-                  </td>
-                  <JugementCell
-                    value={jug.oral}
-                    onChange={v => handleJugement(row.name, 'oral', v)}
-                  />
-                </tr>
+                      {row.oralAvgs.map((avg, si) => {
+                        const { text, cls } = colorCell(avg)
+                        return (
+                          <td key={si} className={`border-b border-r border-gray-200 text-center py-2 text-sm ${cls}`} style={{ width: 88 }}>
+                            {text}
+                          </td>
+                        )
+                      })}
+                      <td className={`border-b border-r border-gray-200 text-center py-2 text-sm ${oralMoy.cls}`} style={{ width: 88, borderLeft: '2px solid #93c5fd' }}>
+                        {oralMoy.text}
+                      </td>
+                      <JugementCell
+                        value={jug.oral}
+                        onChange={v => handleJugement(row.name, 'oral', v)}
+                      />
+                    </tr>
+                  </>
+                )}
               </tbody>
             )
           })}

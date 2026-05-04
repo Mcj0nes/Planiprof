@@ -85,6 +85,7 @@ interface Props {
   etape:         number | null
   gridId:        string
   gridTitle:     string
+  lectureCount:  number
   criteria:      Criterion[]
   levels:        Level[]
   students:      Student[]
@@ -93,13 +94,11 @@ interface Props {
 
 export default function SessionGrid({
   sessionId, sessionNumber, totalSessions, etape,
-  gridId, gridTitle, criteria, levels, students: initial, scores,
+  gridId, gridTitle, lectureCount, criteria, levels, students: initial, scores,
 }: Props) {
   const router       = useRouter()
   const sortedLevels = [...levels].sort((a, b) => a.sort_order - b.sort_order)
 
-  // last 2 criteria are always oral (Interaction + Expression orale)
-  const lectureCount   = Math.max(0, criteria.length - 2)
   const lectureCrit    = criteria.slice(0, lectureCount)
   const oralCrit       = criteria.slice(lectureCount)
 
@@ -356,12 +355,14 @@ export default function SessionGrid({
                   <span className="block text-xs leading-tight">{c.label.split('\n')[0]}</span>
                 </th>
               ))}
-              <th
-                className="p-3 bg-blue-50 border-b border-r border-gray-200 font-semibold text-blue-700 text-center"
-                style={avgThStyle}
-              >
-                <span className="block text-xs leading-tight">Résultat global : lecture</span>
-              </th>
+              {lectureCount > 0 && (
+                <th
+                  className="p-3 bg-blue-50 border-b border-r border-gray-200 font-semibold text-blue-700 text-center"
+                  style={avgThStyle}
+                >
+                  <span className="block text-xs leading-tight">Résultat global : lecture</span>
+                </th>
+              )}
               {oralCrit.map(c => (
                 <th key={c.id} className="p-3 bg-gray-100 border-b border-r border-gray-200 font-semibold text-gray-700 text-center" style={{ width: 80 }}>
                   <span className="block text-xs leading-tight">{c.label.split('\n')[0]}</span>
@@ -371,7 +372,9 @@ export default function SessionGrid({
                 className="p-3 bg-blue-50 border-b border-r border-gray-200 font-semibold text-blue-700 text-center"
                 style={avgThStyle}
               >
-                <span className="block text-xs leading-tight">Résultat global : oral</span>
+                <span className="block text-xs leading-tight">
+                  {lectureCount > 0 ? 'Résultat global : oral' : 'Résultat global'}
+                </span>
               </th>
               <th
                 className="print:hidden p-3 bg-indigo-50 border-b border-r border-gray-200 font-semibold text-indigo-700 text-left"
@@ -424,12 +427,14 @@ export default function SessionGrid({
                       onLevelChange={levelId => handleScoreChange(student.id, c.id, levelId)}
                     />
                   ))}
-                  <td
-                    className="border-b border-r border-gray-200 bg-blue-50 text-center align-middle font-semibold text-blue-800 text-sm select-none"
-                    style={{ width: 90, height: 44, borderLeft: '2px solid #93c5fd' }}
-                  >
-                    {lectureAvg}
-                  </td>
+                  {lectureCount > 0 && (
+                    <td
+                      className="border-b border-r border-gray-200 bg-blue-50 text-center align-middle font-semibold text-blue-800 text-sm select-none"
+                      style={{ width: 90, height: 44, borderLeft: '2px solid #93c5fd' }}
+                    >
+                      {lectureAvg}
+                    </td>
+                  )}
                   {oralCrit.map(c => (
                     <ScoreCell
                       key={c.id}
