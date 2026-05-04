@@ -376,7 +376,7 @@ export default async function ObservationPage({
 
   const [{ data: subjects }, { data: gradeLevels }] = await Promise.all([
     supabase.from('subjects').select('id, name_fr, slug').eq('is_active', true).order('name_fr'),
-    supabase.from('grade_levels').select('id, label_fr, education_level, grade').eq('education_level', 'primaire').order('grade'),
+    supabase.from('grade_levels').select('id, label_fr, education_level, grade').in('education_level', ['primaire', 'préscolaire']).order('grade'),
   ])
 
   const subjectId = params.subjectId ? Number(params.subjectId) : null

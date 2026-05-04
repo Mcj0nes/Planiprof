@@ -19,7 +19,7 @@ export default async function ActivitiesPage() {
   const { data: gradeLevels } = await supabase
     .from('grade_levels')
     .select('id, label_fr')
-    .eq('education_level', 'primaire')
+    .in('education_level', ['primaire', 'préscolaire'])
     .order('grade')
 
   // All content items from the PDA curriculum (filtered client-side by selected subject)

@@ -16,7 +16,7 @@ export default async function NewCustomObsGridPage({
 
   const [{ data: subjects }, { data: gradeLevels }] = await Promise.all([
     supabase.from('subjects').select('id, name_fr').eq('is_active', true).order('name_fr'),
-    supabase.from('grade_levels').select('id, label_fr').eq('education_level', 'primaire').order('grade'),
+    supabase.from('grade_levels').select('id, label_fr').in('education_level', ['primaire', 'préscolaire']).order('grade'),
   ])
 
   return (

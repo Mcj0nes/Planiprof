@@ -40,7 +40,7 @@ export default async function OverviewPage({
 
   const [{ data: subjects }, { data: gradeLevels }] = await Promise.all([
     supabase.from('subjects').select('id, name_fr').eq('is_active', true).order('name_fr'),
-    supabase.from('grade_levels').select('id, label_fr, education_level, grade').eq('education_level', 'primaire').order('grade'),
+    supabase.from('grade_levels').select('id, label_fr, education_level, grade').in('education_level', ['primaire', 'préscolaire']).order('grade'),
   ])
 
   const subjectIdParam      = params.subjectId ?? null
