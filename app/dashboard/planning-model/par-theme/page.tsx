@@ -1,11 +1,21 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ThemeSetupForm from './ThemeSetupForm'
 
 export default async function ParThemePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: themeConfigs } = await supabase
+    .from('theme_configs')
+    .select('id, school_year, sort_order, name, start_date, end_date')
+    .eq('user_id', user.id)
+    .order('school_year', { ascending: false })
+    .order('sort_order')
+
+  const hasConfig = (themeConfigs ?? []).length > 0
 
   return (
     <main className="min-h-screen">
@@ -19,32 +29,46 @@ export default async function ParThemePage() {
 
       <div className="max-w-4xl mx-auto px-8 py-12">
         <h2 className="text-3xl font-bold text-gray-800 mb-2">Planification par thème / projet</h2>
-        <p className="text-gray-500 mb-10">
-          Organisez vos contenus autour de thèmes intégrateurs ou de projets interdisciplinaires.
+        <p className="text-gray-500 mb-8">
+          Organisez vos contenus autour de thèmes intégrateurs ou de projets. Définissez vos thèmes, assignez-y vos contenus, puis planifiez semaine par semaine.
         </p>
+
+        <ThemeSetupForm existingConfigs={themeConfigs ?? []} />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Link
-            href="/dashboard/annual"
+            href="/dashboard/annual?model=par-theme"
             className="rounded-3xl p-10 flex flex-col justify-between min-h-56 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, black)' }}
           >
             <div>
               <h3 className="text-2xl font-bold text-white mb-3 leading-tight">Planification globale</h3>
-              <p className="text-white/70 text-sm leading-relaxed">Vue d&apos;ensemble de l&apos;année par thème et par matière.</p>
+              <p className="text-white/70 text-sm leading-relaxed">Assignez vos contenus à chaque thème ou projet.</p>
             </div>
             <span className="text-white/50 text-sm mt-6 self-end">→</span>
           </Link>
 
-          <div
-            className="rounded-3xl p-10 flex flex-col justify-between min-h-56 border-2 border-dashed border-gray-200 bg-gray-50/60 select-none"
-          >
-            <div>
-              <h3 className="text-2xl font-bold text-gray-400 mb-3 leading-tight">Planification par thème</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Créez vos thèmes ou projets et associez-y vos contenus de plusieurs matières.</p>
+          {hasConfig ? (
+            <Link
+              href="/dashboard/annual?model=par-theme"
+              className="rounded-3xl p-10 flex flex-col justify-between min-h-56 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 80%, black)' }}
+            >
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-3 leading-tight">Planification par thème</h3>
+                <p className="text-white/70 text-sm leading-relaxed">Planifiez semaine par semaine à l&apos;intérieur de chaque thème ou projet.</p>
+              </div>
+              <span className="text-white/50 text-sm mt-6 self-end">→</span>
+            </Link>
+          ) : (
+            <div className="rounded-3xl p-10 flex flex-col justify-between min-h-56 border-2 border-dashed border-gray-200 bg-gray-50/60 select-none">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-400 mb-3 leading-tight">Planification par thème</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">Configurez vos thèmes ci-dessus pour activer cette section.</p>
+              </div>
+              <span className="text-xs text-gray-400 italic mt-6 self-end">Configurer d&apos;abord</span>
             </div>
-            <span className="text-xs text-gray-400 italic mt-6 self-end">Bientôt disponible</span>
-          </div>
+          )}
 
           <Link
             href="/dashboard/weekly"

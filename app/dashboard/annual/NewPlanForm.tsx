@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -45,9 +45,37 @@ export default function NewPlanForm({
   const [gradeLevelId, setGradeLevelId] = useState('')
   const [schoolYear, setSchoolYear] = useState(CURRENT_SCHOOL_YEAR)
   const [title, setTitle] = useState('')
+  const [planningModel, setPlanningModel] = useState('mensuelle')
+  const [warning, setWarning] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Check for existing plan with same combination
+  useEffect(() => {
+    if (!subjectId || !gradeLevelId) { setWarning(''); return }
+    let cancelled = false
+    async function check() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const q = supabase
+        .from('annual_plans')
+        .select('id, title')
+        .eq('user_id', user.id)
+        .eq('school_year', schoolYear)
+        .eq('grade_level_id', Number(gradeLevelId))
+      const { data } = subjectId === 'multi'
+        ? await q.is('subject_id', null)
+        : await q.eq('subject_id', Number(subjectId))
+      if (!cancelled && data && data.length > 0) {
+        const names = data.map((p: any) => p.title ? `«${p.title}»` : 'sans titre').join(', ')
+        setWarning(`Une planification similaire existe déjà (${names}). Vous pouvez quand même en créer une nouvelle — ajoutez un titre pour la différencier.`)
+      } else if (!cancelled) {
+        setWarning('')
+      }
+    }
+    check()
+    return () => { cancelled = true }
+  }, [subjectId, gradeLevelId, schoolYear])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,12 +97,17 @@ export default function NewPlanForm({
         subject_id: subjectId === 'multi' ? null : Number(subjectId),
         grade_level_id: Number(gradeLevelId),
         title: title || null,
+        planning_model: planningModel,
       })
       .select('id')
       .single()
 
     if (dbError) {
-      setError(dbError.message)
+      if (dbError.message.includes('unique')) {
+        setError('Cette combinaison existe déjà. Appliquez la migration pour permettre les doublons, ou ajoutez un titre distinctif.')
+      } else {
+        setError(dbError.message)
+      }
       setLoading(false)
     } else {
       router.push(`/dashboard/annual/${data.id}`)
@@ -140,6 +173,19 @@ export default function NewPlanForm({
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Modèle de planification</label>
+          <select
+            value={planningModel}
+            onChange={e => setPlanningModel(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          >
+            <option value="mensuelle">Planification mensuelle</option>
+            <option value="par-etape">Planification par étape</option>
+            <option value="par-theme">Planification par thème / projet</option>
+          </select>
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Titre (optionnel)</label>
           <input
             type="text"
@@ -150,6 +196,13 @@ export default function NewPlanForm({
           />
         </div>
       </div>
+
+      {warning && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <span className="shrink-0 mt-0.5">⚠️</span>
+          <span>{warning}</span>
+        </div>
+      )}
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 

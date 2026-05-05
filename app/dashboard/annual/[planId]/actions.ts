@@ -36,6 +36,70 @@ export async function unassign(assignmentId: string, planId: string) {
   revalidatePath(`/dashboard/annual/${planId}`)
 }
 
+export async function assignToEtape(planId: string, contentItemId: number, etapeNumber: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const { data: plan } = await supabase
+    .from('annual_plans')
+    .select('id')
+    .eq('id', planId)
+    .eq('user_id', user.id)
+    .single()
+  if (!plan) throw new Error('Plan introuvable')
+
+  await supabase.from('plan_assignments').insert({
+    annual_plan_id: planId,
+    content_item_id: contentItemId,
+    etape_number: etapeNumber,
+  })
+
+  revalidatePath(`/dashboard/annual/${planId}`)
+}
+
+export async function unassignFromEtape(assignmentId: string, planId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  await supabase.from('plan_assignments').delete().eq('id', assignmentId)
+
+  revalidatePath(`/dashboard/annual/${planId}`)
+}
+
+export async function assignToTheme(planId: string, contentItemId: number, themeId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const { data: plan } = await supabase
+    .from('annual_plans')
+    .select('id')
+    .eq('id', planId)
+    .eq('user_id', user.id)
+    .single()
+  if (!plan) throw new Error('Plan introuvable')
+
+  await supabase.from('plan_assignments').insert({
+    annual_plan_id: planId,
+    content_item_id: contentItemId,
+    theme_id: themeId,
+  })
+
+  revalidatePath(`/dashboard/annual/${planId}`)
+}
+
+export async function unassignFromTheme(assignmentId: string, planId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  await supabase.from('plan_assignments').delete().eq('id', assignmentId)
+
+  revalidatePath(`/dashboard/annual/${planId}`)
+}
+
 export async function assignProjectToMonth(planId: string, projectId: string, month: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

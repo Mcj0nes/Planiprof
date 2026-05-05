@@ -30,49 +30,15 @@ export default async function DashboardPage() {
         <p className="text-gray-500 mb-5">Bienvenue, {user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email}</p>
         <Link
           href="/dashboard/planning-model"
-          className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl border-2 bg-white hover:opacity-90 transition mb-10"
-          style={{ borderColor: 'var(--color-nav)', color: 'var(--color-nav)' }}
+          className="w-full rounded-3xl p-10 flex items-center justify-between mb-6 shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-200"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, black)' }}
         >
-          Modèle de planification →
+          <div>
+            <h3 className="text-4xl font-bold text-white mb-2 leading-tight">Modèle de planification</h3>
+            <p className="text-white/70 text-sm leading-relaxed">Choisissez votre modèle de planification et organisez votre année.</p>
+          </div>
+          <span className="text-white/50 text-3xl ml-8">→</span>
         </Link>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-          <Link
-            href="/dashboard/annual"
-            className="rounded-3xl p-10 flex flex-col justify-between min-h-64 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, black)' }}
-          >
-            <div>
-              <h3 className="text-4xl font-bold text-white mb-4 leading-tight">Planification globale</h3>
-              <p className="text-white/70 text-sm leading-relaxed">Organisez tous vos contenus pour l'année scolaire complète.</p>
-            </div>
-            <span className="text-white/50 text-sm mt-8 self-end">→</span>
-          </Link>
-
-          <Link
-            href="/dashboard/monthly"
-            className="rounded-3xl p-10 flex flex-col justify-between min-h-64 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 82%, black)' }}
-          >
-            <div>
-              <h3 className="text-4xl font-bold text-white mb-4 leading-tight">Planification mensuelle</h3>
-              <p className="text-white/70 text-sm leading-relaxed">Planifiez vos contenus semaine par semaine.</p>
-            </div>
-            <span className="text-white/50 text-sm mt-8 self-end">→</span>
-          </Link>
-
-          <Link
-            href="/dashboard/weekly"
-            className="rounded-3xl p-10 flex flex-col justify-between min-h-64 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 90%, white)' }}
-          >
-            <div>
-              <h3 className="text-4xl font-bold text-white mb-4 leading-tight">Planification hebdomadaire</h3>
-              <p className="text-white/70 text-sm leading-relaxed">Organisez vos semaines avec précision.</p>
-            </div>
-            <span className="text-white/50 text-sm mt-8 self-end">→</span>
-          </Link>
-        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Link

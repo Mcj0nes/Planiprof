@@ -3,6 +3,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import PlanningGrid from './PlanningGrid'
+import EtapePlanningGrid from './EtapePlanningGrid'
+import ThemePlanningGrid from './ThemePlanningGrid'
 import EvalLinksSection from './EvalLinksSection'
 
 export default async function AnnualPlanPage({
@@ -23,7 +25,7 @@ export default async function AnnualPlanPage({
 
   const { data: plan } = await supabase
     .from('annual_plans')
-    .select('id, school_year, title, subject_id, grade_level_id, subjects(name_fr, color), grade_levels(label_fr)')
+    .select('id, school_year, title, subject_id, grade_level_id, planning_model, subjects(name_fr, color), grade_levels(label_fr)')
     .eq('id', planId)
     .eq('user_id', user.id)
     .single()
@@ -31,6 +33,9 @@ export default async function AnnualPlanPage({
   if (!plan) notFound()
 
   const isMultiSubject = !plan.subject_id
+  const planningModel = (plan as any).planning_model as string
+  const isParEtape = planningModel === 'par-etape'
+  const isParTheme = planningModel === 'par-theme'
 
   let contentItemsQuery = supabase
     .from('content_items')
@@ -42,41 +47,42 @@ export default async function AnnualPlanPage({
     contentItemsQuery = contentItemsQuery.eq('competencies.subject_id', plan.subject_id)
   }
 
+  const assignmentsQuery: Promise<{ data: any[] | null }> = isParEtape
+    ? supabase.from('plan_assignments').select('id, etape_number, content_item_id').eq('annual_plan_id', planId).not('etape_number', 'is', null) as any
+    : supabase.from('plan_assignments').select('id, month, content_item_id').eq('annual_plan_id', planId) as any
+
   const [
     { data: contentItems },
     { data: assignments },
     { data: projects },
     { data: projectAssignments },
     { data: planContentActivities },
+    { data: etapeConfigs },
   ] = await Promise.all([
-    contentItemsQuery,
-    supabase
-      .from('plan_assignments')
-      .select('id, month, content_item_id')
-      .eq('annual_plan_id', planId),
+    contentItemsQuery as any,
+    assignmentsQuery,
     isMultiSubject
-      ? supabase
-          .from('interdisciplinary_projects')
-          .select('id, title, description, project_subjects(subject_id, subjects(name_fr, color, slug))')
-          .order('title')
+      ? supabase.from('interdisciplinary_projects').select('id, title, description, project_subjects(subject_id, subjects(name_fr, color, slug))').order('title')
       : Promise.resolve({ data: [] }),
     isMultiSubject
-      ? supabase
-          .from('project_assignments')
-          .select('id, month, project_id')
-          .eq('annual_plan_id', planId)
+      ? supabase.from('project_assignments').select('id, month, project_id').eq('annual_plan_id', planId)
       : Promise.resolve({ data: [] }),
-    supabase
-      .from('plan_content_activities')
-      .select('content_item_id, activity_id, template_id')
-      .eq('plan_id', planId)
-      .eq('user_id', user.id),
+    supabase.from('plan_content_activities').select('content_item_id, activity_id, template_id').eq('plan_id', planId).eq('user_id', user.id),
+    isParEtape
+      ? supabase.from('etape_configs').select('etape_number, start_date, end_date').eq('user_id', user.id).eq('school_year', plan.school_year).order('etape_number')
+      : Promise.resolve({ data: [] }),
   ])
 
-  // For multi-subject plans: also load assignments from sibling single-subject plans
-  // (same user, same school year, same grade level) to show a unified view
+  const { data: themeConfigs } = isParTheme
+    ? await supabase.from('theme_configs').select('id, name, start_date, end_date, sort_order').eq('user_id', user.id).eq('school_year', plan.school_year).order('sort_order')
+    : { data: [] as any[] }
+
+  const { data: themeAssignments } = isParTheme
+    ? await supabase.from('plan_assignments').select('id, theme_id, content_item_id').eq('annual_plan_id', planId).not('theme_id', 'is', null)
+    : { data: [] as any[] }
+
   let importedAssignments: Array<{ id: string; month: number | null; content_item_id: number }> = []
-  if (isMultiSubject) {
+  if (isMultiSubject && !isParEtape) {
     const { data: siblingPlans } = await supabase
       .from('annual_plans')
       .select('id')
@@ -95,9 +101,8 @@ export default async function AnnualPlanPage({
     }
   }
 
-  const subjectLabel = isMultiSubject
-    ? 'Toutes les matières'
-    : (plan.subjects as any)?.name_fr
+  const subjectLabel = isMultiSubject ? 'Toutes les matières' : (plan.subjects as any)?.name_fr
+  const modelTag = isParEtape ? ' · Par étape' : isParTheme ? ' · Par thème' : ''
 
   return (
     <main className="min-h-screen">
@@ -107,8 +112,7 @@ export default async function AnnualPlanPage({
         <div className="flex-1">
           <span className="text-lg font-bold text-white">{subjectLabel}</span>
           <span className="text-sm text-white/70 ml-2">
-            {(plan.grade_levels as any)?.label_fr} · {plan.school_year}
-            {plan.title && ` · ${plan.title}`}
+            {(plan.grade_levels as any)?.label_fr} · {plan.school_year}{plan.title && ` · ${plan.title}`}{modelTag}
           </span>
         </div>
         <div className="flex gap-1">
@@ -131,6 +135,22 @@ export default async function AnnualPlanPage({
         <Suspense>
           <EvalLinksSection planId={planId} gradeId={plan.grade_level_id} subjectId={plan.subject_id ?? null} section={section} />
         </Suspense>
+      ) : isParTheme ? (
+        <ThemePlanningGrid
+          planId={planId}
+          contentItems={(contentItems ?? []) as any[]}
+          assignments={(themeAssignments ?? []) as any[]}
+          themeConfigs={(themeConfigs ?? []) as any[]}
+          planContentActivities={(planContentActivities ?? []) as any[]}
+        />
+      ) : isParEtape ? (
+        <EtapePlanningGrid
+          planId={planId}
+          contentItems={(contentItems ?? []) as any[]}
+          assignments={(assignments ?? []) as any[]}
+          etapeConfigs={(etapeConfigs ?? []) as any[]}
+          planContentActivities={(planContentActivities ?? []) as any[]}
+        />
       ) : (
         <PlanningGrid
           planId={planId}
