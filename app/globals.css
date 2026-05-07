@@ -12,6 +12,15 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Shift Tailwind gray palette one step darker for readability */
+  --color-gray-100: #E5E7EB;
+  --color-gray-200: #D1D5DB;
+  --color-gray-300: #9CA3AF;
+  --color-gray-400: #6B7280;
+  --color-gray-500: #4B5563;
+  --color-gray-600: #374151;
+  --color-gray-700: #1F2937;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +34,18 @@ body {
   background-color: var(--color-body-bg);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+
+/* Darker, more readable placeholder text */
+::placeholder {
+  color: #6B7280;
+  opacity: 1;
+}
+
+/* Slightly heavier weight for inputs and textareas */
+input, textarea, select {
+  font-weight: 500;
 }
 
 .chip-actions { opacity: 0; transition: opacity 0.15s; }

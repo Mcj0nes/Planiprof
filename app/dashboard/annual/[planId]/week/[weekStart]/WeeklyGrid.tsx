@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from 'react'
 import {
   assignToPeriod, removeFromPeriod, saveWeekendNote,
   createWeekSticker, updateStickerPosition, updateStickerWidth, deleteWeekSticker,
-  savePeriodTime, addWeekActivity, removeWeekActivity,
+  savePeriodTime, addWeekActivity, removeWeekActivity, updatePeriodCount,
 } from './actions'
 
 const DAY_STYLES = [
@@ -121,6 +121,7 @@ type Props = {
   weekActivities: WeekActivity[]
   availableActivities: AvailableActivity[]
   planContentActivities?: PlanContentActivity[]
+  periodCount?: number
 }
 
 function getSubjectInfo(item: ContentItem) {
@@ -129,7 +130,7 @@ function getSubjectInfo(item: ContentItem) {
   return { name: subj?.name_fr ?? item.competencies?.name_fr ?? 'Contenu', color, bg: `rgba(${hexToRgb(color)}, 0.12)` }
 }
 
-export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods, dayNotes, weekStickers, periodTimes, weekActivities: weekActivitiesInit, availableActivities, planContentActivities = [] }: Props) {
+export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods, dayNotes, weekStickers, periodTimes, weekActivities: weekActivitiesInit, availableActivities, planContentActivities = [], periodCount: periodCountInit = 6 }: Props) {
   const [localPeriods, setLocalPeriods]           = useState<DayPeriod[]>(dayPeriods.map(p => ({ ...p, is_special_activity: p.is_special_activity ?? false })))
   const [selected, setSelected]                   = useState<Selected | null>(null)
   const [selectedSticker, setSelectedSticker]     = useState<string | null>(null)
@@ -146,6 +147,7 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
   const [weekendNotes, setWeekendNotes] = useState<Record<number, string>>(
     () => Object.fromEntries(dayNotes.map(n => [n.day_of_week, n.note ?? '']))
   )
+  const [localPeriodCount, setLocalPeriodCount] = useState(periodCountInit)
   const [, startTransition] = useTransition()
   const debounceTimers   = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const dragRef          = useRef<DragState | null>(null)
@@ -239,6 +241,12 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
     debounceTimers.current[key] = setTimeout(() => {
       startTransition(async () => { await saveWeekendNote(planId, weekStart, dayOfWeek, value) })
     }, 800)
+  }
+
+  function handlePeriodCountChange(delta: number) {
+    const next = Math.max(1, Math.min(12, localPeriodCount + delta))
+    setLocalPeriodCount(next)
+    startTransition(async () => { await updatePeriodCount(planId, next) })
   }
 
   function handlePeriodTimeChange(periodNum: number, value: string) {
@@ -580,7 +588,7 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
               <p className="text-sm font-bold">·</p>
               <p className="text-xs mt-0.5">·</p>
             </div>
-            {Array.from({ length: 6 }, (_, i) => {
+            {Array.from({ length: localPeriodCount }, (_, i) => {
               const periodNum = i + 1
               return (
                 <div key={periodNum} className="flex-1 flex items-center" style={{ minHeight: 52 }}>
@@ -594,6 +602,21 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
                 </div>
               )
             })}
+            {/* +/- period buttons */}
+            <div className="flex flex-col gap-1 pt-1" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => handlePeriodCountChange(1)}
+                disabled={localPeriodCount >= 12}
+                title="Ajouter une période"
+                className="w-full text-xs py-1 rounded-lg bg-white border border-gray-200 text-gray-500 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed transition font-bold"
+              >+</button>
+              <button
+                onClick={() => handlePeriodCountChange(-1)}
+                disabled={localPeriodCount <= 1}
+                title="Retirer une période"
+                className="w-full text-xs py-1 rounded-lg bg-white border border-gray-200 text-gray-500 hover:border-red-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition font-bold"
+              >−</button>
+            </div>
           </div>
 
           {/* ── Weekday columns ── */}
@@ -609,7 +632,7 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
                   <p className="text-xs mt-0.5" style={{ color: text, opacity: 0.7 }}>{dateLabel}</p>
                 </div>
 
-                {Array.from({ length: 6 }, (_, i) => {
+                {Array.from({ length: localPeriodCount }, (_, i) => {
                   const periodNumber = i + 1
                   const slots        = getSlots(dayOfWeek, periodNumber)
                   const isEmpty      = slots.length === 0

@@ -71,6 +71,13 @@ type ContentItem = { id: number; name_fr: string; sort_order: number; competency
 type EtapeAssignment = { id: string; etape_number: number | null; week_start: string | null; content_item_id: number }
 type WeekNote = { week_start: string; special_activities: string | null; reflective_review: string | null }
 type PlanContentActivity = { content_item_id: number; activity_id: string | null; template_id: string | null }
+type CalendarEvent = { id: string; event_date: string; event_type: string; label: string }
+
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
 
 type Props = {
   planId: string
@@ -81,9 +88,10 @@ type Props = {
   etapeAssignments: EtapeAssignment[]
   weekNotes: WeekNote[]
   planContentActivities?: PlanContentActivity[]
+  calendarEvents?: CalendarEvent[]
 }
 
-export default function EtapeGrid({ planId, etapeNumber, startDate, endDate, contentItems, etapeAssignments, weekNotes, planContentActivities = [] }: Props) {
+export default function EtapeGrid({ planId, etapeNumber, startDate, endDate, contentItems, etapeAssignments, weekNotes, planContentActivities = [], calendarEvents = [] }: Props) {
   const [localAssignments, setLocalAssignments] = useState<EtapeAssignment[]>(etapeAssignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
@@ -347,6 +355,8 @@ export default function EtapeGrid({ planId, etapeNumber, startDate, endDate, con
                 <div key={rowIdx} className="flex gap-3">
                   {rowWeeks.map(({ weekStart, label, bg, text, border }) => {
           const weekItems = getItemsForWeek(weekStart)
+          const weekEnd = addDays(weekStart, 6)
+          const weekEvents = calendarEvents.filter(ev => ev.event_date >= weekStart && ev.event_date <= weekEnd)
           return (
               <div
                 key={weekStart}
@@ -374,6 +384,18 @@ export default function EtapeGrid({ planId, etapeNumber, startDate, endDate, con
                     </Link>
                   )}
                 </div>
+
+                {weekEvents.length > 0 && (
+                  <div className="px-2 py-1 border-b flex flex-wrap gap-1" style={{ backgroundColor: '#FFFBEB' }}>
+                    {weekEvents.map(ev => (
+                      <span key={ev.id} title={ev.label}
+                        className="text-[0.6rem] px-1.5 py-0.5 rounded font-medium"
+                        style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                        {ev.label.length > 22 ? ev.label.slice(0, 20) + '…' : ev.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex-1 p-2 flex flex-col gap-1.5">
                   {weekItems.map(({ assignment, item }) => {

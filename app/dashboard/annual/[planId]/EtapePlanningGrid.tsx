@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { assignToEtape, unassignFromEtape, assignActivityToContent, unassignActivityFromContent } from './actions'
+import { getSuggestedActivitiesForContent } from '../../activities/actions'
 import { createClient } from '@/lib/supabase/client'
 
 function domainEmoji(name: string): string {
@@ -38,12 +39,15 @@ type PlanContentActivity = {
   content_item_id: number; activity_id: string | null; template_id: string | null
 }
 
+type CalendarEvent = { id: string; event_date: string; event_type: string; label: string }
+
 type Props = {
   planId: string
   contentItems: ContentItem[]
   assignments: EtapeAssignment[]
   etapeConfigs: EtapeConfig[]
   planContentActivities?: PlanContentActivity[]
+  calendarEvents?: CalendarEvent[]
 }
 
 function formatDateRange(start: string, end: string) {
@@ -55,19 +59,21 @@ function formatDateRange(start: string, end: string) {
   return `${fmt(start)} – ${fmt(end)}`
 }
 
-export default function EtapePlanningGrid({ planId, contentItems, assignments, etapeConfigs, planContentActivities = [] }: Props) {
+export default function EtapePlanningGrid({ planId, contentItems, assignments, etapeConfigs, planContentActivities = [], calendarEvents = [] }: Props) {
   const [localAssignments, setLocalAssignments] = useState<EtapeAssignment[]>(assignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
   const [, startTransition] = useTransition()
+  type ActivityEntry = { id: string; title: string; type_tag: string | null; duration_min: number | null; is_template: boolean }
   const [activityModal, setActivityModal] = useState<{
     contentItem: ContentItem
     loading: boolean
-    activities: { id: string; title: string; type_tag: string | null; duration_min: number | null; is_template: boolean }[]
+    activities: ActivityEntry[]
+    suggestions: ActivityEntry[]
   } | null>(null)
 
   async function openActivityModal(item: ContentItem) {
-    setActivityModal({ contentItem: item, loading: true, activities: [] })
+    setActivityModal({ contentItem: item, loading: true, activities: [], suggestions: [] })
     const supabase = createClient()
     const [actLinksRes, tplLinksRes] = await Promise.all([
       supabase.from('activity_content_items').select('activity_id').eq('content_item_id', item.id),
@@ -75,16 +81,18 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
     ])
     const actIds = (actLinksRes.data ?? []).map((l: any) => l.activity_id)
     const tplIds = (tplLinksRes.data ?? []).map((l: any) => l.template_id)
-    const [actsRes, tplsRes] = await Promise.all([
+    const [actsRes, tplsRes, suggestions] = await Promise.all([
       actIds.length > 0 ? supabase.from('activities').select('id, title, type_tag, duration_min').in('id', actIds) : Promise.resolve({ data: [] as any[] }),
       tplIds.length > 0 ? supabase.from('activity_templates').select('id, title, type_tag, duration_min').in('id', tplIds) : Promise.resolve({ data: [] as any[] }),
+      getSuggestedActivitiesForContent(item.id, actIds, tplIds),
     ])
     setActivityModal(prev => prev ? {
       ...prev, loading: false,
       activities: [
         ...(actsRes.data ?? []).map((a: any) => ({ ...a, is_template: false })),
         ...(tplsRes.data ?? []).map((t: any) => ({ ...t, is_template: true })),
-      ]
+      ],
+      suggestions,
     } : null)
   }
 
@@ -225,14 +233,14 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
             <div className="p-5">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Activités associées</p>
               {activityModal.loading && <p className="text-sm text-gray-400 text-center py-4">Chargement…</p>}
-              {!activityModal.loading && activityModal.activities.length === 0 && (
+              {!activityModal.loading && activityModal.activities.length === 0 && activityModal.suggestions.length === 0 && (
                 <div className="text-center py-4">
                   <p className="text-sm text-gray-400 mb-2">Aucune activité liée à ce contenu.</p>
                   <a href="/dashboard/activities" className="text-xs text-indigo-500 hover:text-indigo-700 font-medium">Créer une activité →</a>
                 </div>
               )}
               {!activityModal.loading && activityModal.activities.length > 0 && (
-                <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {activityModal.activities.map(act => {
                     const actId = act.is_template ? null : act.id
                     const tplId = act.is_template ? act.id : null
@@ -258,6 +266,38 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
                       </div>
                     )
                   })}
+                </div>
+              )}
+              {!activityModal.loading && activityModal.suggestions.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-2">✦ Suggestions</p>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {activityModal.suggestions.map(act => {
+                      const actId = act.is_template ? null : act.id
+                      const tplId = act.is_template ? act.id : null
+                      const assigned = isPcaAssigned(activityModal.contentItem.id, actId, tplId)
+                      return (
+                        <div key={act.id} className="flex items-center gap-2">
+                          <a href={`/dashboard/activities/present/${act.id}`} target="_blank" rel="noopener noreferrer"
+                            className="flex-1 flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-transparent hover:border-amber-200 transition group min-w-0">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-amber-700">{act.title}</p>
+                              {(act.type_tag || act.duration_min) && (
+                                <p className="text-xs text-gray-400">{[act.type_tag, act.duration_min ? `${act.duration_min} min` : null].filter(Boolean).join(' · ')}</p>
+                              )}
+                            </div>
+                          </a>
+                          <button
+                            onClick={() => handleTogglePca(activityModal.contentItem.id, actId, tplId)}
+                            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition"
+                            style={assigned ? { backgroundColor: '#FEF3C7', color: '#B45309' } : { backgroundColor: '#F3F4F6', color: '#9CA3AF' }}
+                          >
+                            {assigned ? '✓' : '+'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -325,6 +365,23 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
                     </Link>
                   )}
                 </div>
+
+                {/* Calendar events for this étape */}
+                {config && (() => {
+                  const evs = calendarEvents.filter(ev => ev.event_date >= config.start_date && ev.event_date <= config.end_date)
+                  const unique = evs.filter((e, i, a) => a.findIndex(x => x.label === e.label) === i)
+                  return unique.length > 0 ? (
+                    <div className="px-3 py-1.5 border-b flex flex-wrap gap-1" style={{ backgroundColor: '#FFFBEB' }}>
+                      {unique.map(ev => (
+                        <span key={ev.id} title={ev.label}
+                          className="text-[0.62rem] px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                          {ev.label.length > 25 ? ev.label.slice(0, 23) + '…' : ev.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null
+                })()}
 
                 {/* Items */}
                 <div className="flex-1 p-3 flex flex-col gap-1.5 min-h-64">

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
-import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, addTemplateContentItem, removeTemplateContentItem } from './actions'
+import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, addTemplateContentItem, removeTemplateContentItem, autoMatchAllActivities } from './actions'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -630,6 +630,8 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   const [confirmDelete, setConfirmDelete]       = useState<string | null>(null)
   const [uploadingFor, setUploadingFor]         = useState<Set<string>>(new Set())
   const [isCreating, setIsCreating]             = useState(false)
+  const [isAutoMatching, setIsAutoMatching]     = useState(false)
+  const [autoMatchResult, setAutoMatchResult]   = useState<{ matched: number; skipped: number } | null>(null)
   const [detailActivity, setDetailActivity]     = useState<Activity | null>(null)
   const [detailRegular, setDetailRegular]       = useState<Activity | null>(null)
   const [uploadError, setUploadError]           = useState<string | null>(null)
@@ -1165,7 +1167,28 @@ export default function ActivitiesClient({ activities: initial, templates: initi
       <div className="max-w-5xl mx-auto px-8 py-8">
 
         {errorBanner}
-        <div className="flex justify-end mb-6">
+        <div className="flex items-center justify-end gap-3 mb-6">
+          <button
+            onClick={async () => {
+              setIsAutoMatching(true)
+              setAutoMatchResult(null)
+              try {
+                const result = await autoMatchAllActivities()
+                setAutoMatchResult(result)
+              } finally {
+                setIsAutoMatching(false)
+              }
+            }}
+            disabled={isAutoMatching}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            {isAutoMatching ? 'Analyse en cours…' : '✦ Associer à la PDA automatiquement'}
+          </button>
+          {autoMatchResult && (
+            <span className="text-sm text-green-600 font-medium">
+              ✓ {autoMatchResult.matched} activité{autoMatchResult.matched !== 1 ? 's' : ''} associée{autoMatchResult.matched !== 1 ? 's' : ''}
+            </span>
+          )}
           <button onClick={() => setShowCreate(true)}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition"
             style={{ backgroundColor: 'var(--color-nav)' }}>

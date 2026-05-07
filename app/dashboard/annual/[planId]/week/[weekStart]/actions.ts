@@ -133,3 +133,13 @@ export async function saveWeekendNote(
     { onConflict: 'annual_plan_id,week_start,day_of_week' }
   )
 }
+
+
+export async function updatePeriodCount(planId: string, count: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+  await supabase.from('annual_plans')
+    .update({ period_count: Math.max(1, Math.min(12, count)) })
+    .eq('id', planId).eq('user_id', user.id)
+}

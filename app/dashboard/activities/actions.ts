@@ -2,6 +2,70 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+// ─── Text matching helpers ────────────────────────────────────────────────────
+
+const STOP_WORDS = new Set([
+  'le', 'la', 'les', 'de', 'du', 'des', 'un', 'une', 'et', 'ou', 'par', 'pour',
+  'dans', 'en', 'a', 'au', 'aux', 'sur', 'sous', 'avec', 'sans', 'se', 'ce',
+  'cet', 'cette', 'ces', 'il', 'elle', 'ils', 'elles', 'on', 'que', 'qui',
+  'dont', 'si', 'est', 'sont', 'pas', 'ne', 'plus', 'tres', 'bien', 'tout',
+  'tous', 'toute', 'toutes', 'leur', 'leurs', 'mon', 'ton', 'son', 'ma', 'ta',
+  'sa', 'nos', 'vos', 'ses', 'je', 'tu', 'nous', 'vous', 'y', 'aussi', 'comme',
+])
+
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function tokenize(text: string): string[] {
+  return normalizeText(text)
+    .split(' ')
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w))
+}
+
+function scoreMatch(activityTokens: string[], contentName: string): number {
+  const contentTokens = tokenize(contentName)
+  if (contentTokens.length === 0) return 0
+  let matches = 0
+  for (const ct of contentTokens) {
+    if (activityTokens.some(at => at === ct || at.includes(ct) || ct.includes(at))) {
+      matches++
+    }
+  }
+  return matches / contentTokens.length
+}
+
+async function autoMatchContentItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  subjectId: number,
+  gradeLevelIds: number[],
+  activityText: string,
+): Promise<number[]> {
+  if (gradeLevelIds.length === 0) return []
+  const activityTokens = tokenize(activityText)
+  if (activityTokens.length === 0) return []
+
+  const { data: items } = await supabase
+    .from('content_items')
+    .select('id, name_fr, competencies!inner(subject_id)')
+    .in('grade_level_id', gradeLevelIds)
+    .eq('competencies.subject_id', subjectId)
+
+  if (!items || items.length === 0) return []
+
+  const THRESHOLD = 0.5
+  return items
+    .filter((item: any) => scoreMatch(activityTokens, item.name_fr) >= THRESHOLD)
+    .map((item: any) => item.id as number)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function createActivity(
   id: string,
   title: string,
@@ -32,9 +96,16 @@ export async function createActivity(
   })
   if (error) throw new Error(`Impossible de créer l'activité : ${error.message} (code ${error.code})`)
 
-  if (contentItemIds.length > 0) {
+  let finalContentItemIds = contentItemIds
+  if (finalContentItemIds.length === 0 && subjectId && gradeLevelIds.length > 0) {
+    const activityText = [title, description, pdaLink, triggerText, openQuestion, expectedStrategies, observationCriteria]
+      .filter(Boolean).join(' ')
+    finalContentItemIds = await autoMatchContentItems(supabase, subjectId, gradeLevelIds, activityText)
+  }
+
+  if (finalContentItemIds.length > 0) {
     const { error: ciError } = await supabase.from('activity_content_items').insert(
-      contentItemIds.map(cid => ({ activity_id: id, content_item_id: cid }))
+      finalContentItemIds.map(cid => ({ activity_id: id, content_item_id: cid }))
     )
     if (ciError) throw new Error(`Erreur lors de l'association des contenus : ${ciError.message}`)
   }
@@ -137,6 +208,97 @@ export async function removeTemplateContentItem(templateId: string, contentItemI
   await supabase.from('template_content_items')
     .delete()
     .eq('template_id', templateId).eq('content_item_id', contentItemId).eq('user_id', user.id)
+}
+
+export async function getSuggestedActivitiesForContent(
+  contentItemId: number,
+  excludeActivityIds: string[],
+  excludeTemplateIds: string[],
+): Promise<{ id: string; title: string; type_tag: string | null; duration_min: number | null; is_template: boolean }[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: contentItem } = await supabase
+    .from('content_items').select('name_fr').eq('id', contentItemId).single()
+  if (!contentItem) return []
+
+  const contentTokens = tokenize(contentItem.name_fr)
+  if (contentTokens.length === 0) return []
+
+  const THRESHOLD = 0.4
+
+  const [{ data: userActivities }, { data: templates }] = await Promise.all([
+    supabase.from('activities')
+      .select('id, title, description, pda_link, trigger_text, open_question, type_tag, duration_min')
+      .eq('user_id', user.id)
+      .not('id', 'in', excludeActivityIds.length > 0 ? `(${excludeActivityIds.map(id => `"${id}"`).join(',')})` : '("")'),
+    supabase.from('activity_templates')
+      .select('id, title, description, pda_link, trigger_text, open_question, type_tag, duration_min')
+      .not('id', 'in', excludeTemplateIds.length > 0 ? `(${excludeTemplateIds.map(id => `"${id}"`).join(',')})` : '("")'),
+  ])
+
+  const results: { id: string; title: string; type_tag: string | null; duration_min: number | null; is_template: boolean }[] = []
+
+  for (const act of userActivities ?? []) {
+    const text = [act.title, act.description, act.pda_link, act.trigger_text, act.open_question].filter(Boolean).join(' ')
+    if (scoreMatch(tokenize(text), contentItem.name_fr) >= THRESHOLD) {
+      results.push({ id: act.id, title: act.title, type_tag: act.type_tag, duration_min: act.duration_min, is_template: false })
+    }
+  }
+
+  for (const tpl of templates ?? []) {
+    const text = [tpl.title, tpl.description, tpl.pda_link, tpl.trigger_text, tpl.open_question].filter(Boolean).join(' ')
+    if (scoreMatch(tokenize(text), contentItem.name_fr) >= THRESHOLD) {
+      results.push({ id: tpl.id, title: tpl.title, type_tag: tpl.type_tag, duration_min: tpl.duration_min, is_template: true })
+    }
+  }
+
+  return results.slice(0, 8)
+}
+
+export async function autoMatchAllActivities(): Promise<{ matched: number; skipped: number }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  // Fetch all user activities that have no content associations yet
+  const { data: activities } = await supabase
+    .from('activities')
+    .select('id, title, description, subject_id, pda_link, trigger_text, open_question, expected_strategies, observation_criteria, activity_grade_levels(grade_level_id), activity_content_items(content_item_id)')
+    .eq('user_id', user.id)
+
+  if (!activities) return { matched: 0, skipped: 0 }
+
+  let matched = 0
+  let skipped = 0
+
+  for (const activity of activities) {
+    if ((activity.activity_content_items as any[]).length > 0) { skipped++; continue }
+    if (!activity.subject_id) { skipped++; continue }
+
+    const gradeLevelIds = (activity.activity_grade_levels as any[]).map((gl: any) => gl.grade_level_id)
+    if (gradeLevelIds.length === 0) { skipped++; continue }
+
+    const activityText = [
+      activity.title, activity.description, activity.pda_link,
+      activity.trigger_text, activity.open_question,
+      activity.expected_strategies, activity.observation_criteria,
+    ].filter(Boolean).join(' ')
+
+    const matchedIds = await autoMatchContentItems(supabase, activity.subject_id, gradeLevelIds, activityText)
+
+    if (matchedIds.length > 0) {
+      await supabase.from('activity_content_items').insert(
+        matchedIds.map(cid => ({ activity_id: activity.id, content_item_id: cid }))
+      )
+      matched++
+    } else {
+      skipped++
+    }
+  }
+
+  return { matched, skipped }
 }
 
 export async function deleteAttachment(attachmentId: string, filePath: string) {

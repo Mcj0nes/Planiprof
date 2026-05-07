@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import WeeklyGrid from './WeeklyGrid'
 import EvalLinksSection from '../../EvalLinksSection'
+import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const MONTH_ABBR: Record<number, string> = {
   8: 'août', 9: 'sept.', 10: 'oct.', 11: 'nov.', 12: 'déc.',
@@ -33,13 +34,17 @@ export default async function WeekPage({
   const activeTab = sp.tab === 'evaluation' ? 'evaluation' : 'contenu'
   if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) notFound()
 
+  const [wy, wm, wd] = weekStart.split('-').map(Number)
+  const weekEndDate = new Date(wy, wm - 1, wd + 6)
+  const weekEnd = `${weekEndDate.getFullYear()}-${String(weekEndDate.getMonth() + 1).padStart(2, '0')}-${String(weekEndDate.getDate()).padStart(2, '0')}`
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: plan } = await supabase
     .from('annual_plans')
-    .select('id, school_year, subject_id, grade_level_id, subjects(name_fr), grade_levels(label_fr)')
+    .select('id, school_year, subject_id, grade_level_id, period_count, subjects(name_fr), grade_levels(label_fr)')
     .eq('id', planId)
     .eq('user_id', user.id)
     .single()
@@ -127,6 +132,9 @@ export default async function WeekPage({
     }
   }).filter(Boolean)
 
+  // ── School calendar events for this week ────────────────────
+  const calendarEvents = await getCalendarEventsInRange(weekStart, weekEnd)
+
   // ── Available activities for suggestion modal ────────────────
   const [userActRes, tplAllRes, pcaRes] = await Promise.all([
     supabase.from('activities').select('id, title, type_tag, duration_min').eq('user_id', user.id),
@@ -170,6 +178,16 @@ export default async function WeekPage({
         </div>
       </nav>
 
+      {calendarEvents.length > 0 && activeTab === 'contenu' && (
+        <div className="flex flex-wrap gap-2 px-6 py-2 border-b bg-amber-50">
+          {calendarEvents.map(ev => (
+            <span key={ev.id} className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">
+              {ev.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       {activeTab === 'evaluation' ? (
         <Suspense>
           <EvalLinksSection planId={planId} gradeId={plan.grade_level_id} subjectId={plan.subject_id ?? null} />
@@ -186,6 +204,7 @@ export default async function WeekPage({
           weekActivities={weekActivities as any[]}
           availableActivities={availableActivities}
           planContentActivities={(pcaRes.data ?? []) as any[]}
+          periodCount={(plan as any).period_count ?? 6}
         />
       )}
     </main>

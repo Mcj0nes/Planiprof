@@ -6,6 +6,7 @@ import PlanningGrid from './PlanningGrid'
 import EtapePlanningGrid from './EtapePlanningGrid'
 import ThemePlanningGrid from './ThemePlanningGrid'
 import EvalLinksSection from './EvalLinksSection'
+import { getCalendarEvents } from '@/app/dashboard/school-calendar/actions'
 
 export default async function AnnualPlanPage({
   params,
@@ -81,6 +82,8 @@ export default async function AnnualPlanPage({
     ? await supabase.from('plan_assignments').select('id, theme_id, content_item_id').eq('annual_plan_id', planId).not('theme_id', 'is', null)
     : { data: [] as any[] }
 
+  const calendarEvents = await getCalendarEvents(plan.school_year)
+
   let importedAssignments: Array<{ id: string; month: number | null; content_item_id: number }> = []
   if (isMultiSubject && !isParEtape) {
     const { data: siblingPlans } = await supabase
@@ -142,6 +145,7 @@ export default async function AnnualPlanPage({
           assignments={(themeAssignments ?? []) as any[]}
           themeConfigs={(themeConfigs ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
+          calendarEvents={calendarEvents}
         />
       ) : isParEtape ? (
         <EtapePlanningGrid
@@ -150,6 +154,7 @@ export default async function AnnualPlanPage({
           assignments={(assignments ?? []) as any[]}
           etapeConfigs={(etapeConfigs ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
+          calendarEvents={calendarEvents}
         />
       ) : (
         <PlanningGrid
@@ -161,6 +166,7 @@ export default async function AnnualPlanPage({
           projectAssignments={(projectAssignments ?? []) as any[]}
           importedAssignments={importedAssignments}
           planContentActivities={(planContentActivities ?? []) as any[]}
+          calendarEvents={calendarEvents}
         />
       )}
     </main>

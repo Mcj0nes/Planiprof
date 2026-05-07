@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import ThemeGrid from './ThemeGrid'
+import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 function formatDateRange(start: string, end: string) {
   const fmt = (d: string) => {
@@ -81,6 +82,8 @@ export default async function ThemeDetailPage({
       .eq('user_id', user.id),
   ])
 
+  const calendarEvents = await getCalendarEventsInRange(themeConfig.start_date, themeConfig.end_date)
+
   const subjectLabel = plan.subject_id ? (plan.subjects as any)?.name_fr : 'Toutes les matières'
 
   return (
@@ -112,6 +115,7 @@ export default async function ThemeDetailPage({
         themeAssignments={(themeAssignments ?? []) as any[]}
         weekNotes={(weekNotes ?? []) as any[]}
         planContentActivities={(planContentActivities ?? []) as any[]}
+        calendarEvents={calendarEvents}
       />
     </main>
   )

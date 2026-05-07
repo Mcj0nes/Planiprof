@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import EtapeGrid from './EtapeGrid'
+import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const ETAPE_LABELS = ['', 'Étape 1', 'Étape 2', 'Étape 3']
 
@@ -74,6 +75,8 @@ export default async function EtapeDetailPage({
       .eq('user_id', user.id),
   ])
 
+  const calendarEvents = await getCalendarEventsInRange(etapeConfig.start_date, etapeConfig.end_date)
+
   const subjectLabel = plan.subject_id ? (plan.subjects as any)?.name_fr : 'Toutes les matières'
   const prevEtape = etapeNumber > 1 ? etapeNumber - 1 : null
   const nextEtape = etapeNumber < 3 ? etapeNumber + 1 : null
@@ -107,6 +110,7 @@ export default async function EtapeDetailPage({
         etapeAssignments={(etapeAssignments ?? []) as any[]}
         weekNotes={(weekNotes ?? []) as any[]}
         planContentActivities={(planContentActivities ?? []) as any[]}
+        calendarEvents={calendarEvents}
       />
     </main>
   )

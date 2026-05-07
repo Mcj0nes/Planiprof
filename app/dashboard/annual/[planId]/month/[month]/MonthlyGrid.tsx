@@ -95,6 +95,19 @@ type PlanContentActivity = {
   template_id: string | null
 }
 
+type CalendarEvent = {
+  id: string
+  event_date: string
+  event_type: string
+  label: string
+}
+
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 type Props = {
   planId: string
   schoolYear: string
@@ -103,9 +116,10 @@ type Props = {
   monthAssignments: MonthAssignment[]
   weekNotes: WeekNote[]
   planContentActivities?: PlanContentActivity[]
+  calendarEvents?: CalendarEvent[]
 }
 
-export default function MonthlyGrid({ planId, schoolYear, month, contentItems, monthAssignments, weekNotes, planContentActivities = [] }: Props) {
+export default function MonthlyGrid({ planId, schoolYear, month, contentItems, monthAssignments, weekNotes, planContentActivities = [], calendarEvents = [] }: Props) {
   const [localAssignments, setLocalAssignments] = useState<MonthAssignment[]>(monthAssignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
@@ -422,6 +436,8 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
         <div className="flex gap-3 p-4 h-full min-w-[600px]">
           {weeks.map(({ weekStart, label, bg, text, border }) => {
             const weekItems = getItemsForWeek(weekStart)
+            const weekEnd = addDays(weekStart, 6)
+            const weekEvents = calendarEvents.filter(ev => ev.event_date >= weekStart && ev.event_date <= weekEnd)
 
             return (
               <div
@@ -453,6 +469,19 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
                     </Link>
                   )}
                 </div>
+
+                {/* Calendar events */}
+                {weekEvents.length > 0 && (
+                  <div className="px-2 py-1 border-b flex flex-wrap gap-1" style={{ backgroundColor: '#FFFBEB' }}>
+                    {weekEvents.map(ev => (
+                      <span key={ev.id} title={ev.label}
+                        className="text-[0.6rem] px-1.5 py-0.5 rounded font-medium"
+                        style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                        {ev.label.length > 22 ? ev.label.slice(0, 20) + '…' : ev.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Assigned items */}
                 <div className="flex-1 p-2 flex flex-col gap-1.5">

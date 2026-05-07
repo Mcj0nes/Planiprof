@@ -28,53 +28,66 @@ export default async function DashboardPage() {
       <div className="max-w-6xl mx-auto px-8 py-12">
         <h2 className="text-3xl font-bold text-gray-800 mb-1">Gagner du temps pour que l&apos;élève redevienne au centre.</h2>
         <p className="text-gray-500 mb-5">Bienvenue, {user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email}</p>
-        <Link
-          href="/dashboard/planning-model"
-          className="w-full rounded-3xl p-10 flex items-center justify-between mb-6 shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-200"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, black)' }}
-        >
-          <div>
-            <h3 className="text-4xl font-bold text-white mb-2 leading-tight">Modèle de planification</h3>
-            <p className="text-white/70 text-sm leading-relaxed">Choisissez votre modèle de planification et organisez votre année.</p>
-          </div>
-          <span className="text-white/50 text-3xl ml-8">→</span>
-        </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <Link
+            href="/dashboard/planning-model"
+            className="rounded-3xl p-10 flex items-center justify-between shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-200"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, black)' }}
+          >
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">Modèle de planification</h3>
+              <p className="text-white/70 text-sm leading-relaxed">Choisissez votre modèle de planification et organisez votre année.</p>
+            </div>
+            <span className="text-white/50 text-3xl ml-8">→</span>
+          </Link>
+          <Link
+            href="/dashboard/school-calendar"
+            className="rounded-3xl p-10 flex items-center justify-between shadow-md hover:shadow-xl hover:scale-[1.01] transition-all duration-200"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, #0f766e)' }}
+          >
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">Calendrier scolaire</h3>
+              <p className="text-white/70 text-sm leading-relaxed">Enregistrez les congés, journées pédagogiques et dates importantes.</p>
+            </div>
+            <span className="text-white/50 text-3xl ml-8">→</span>
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Link
             href="/dashboard/gradebook"
-            className="rounded-3xl p-7 flex flex-col justify-between min-h-36 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            className="rounded-3xl p-10 flex flex-col justify-between min-h-72 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 72%, #3730a3)' }}
           >
             <div>
-              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">Carnet de notes</h3>
+              <h3 className="text-2xl font-bold text-white mb-3 leading-tight">Carnet de notes</h3>
               <p className="text-white/70 text-sm leading-relaxed">Résultats, moyennes et jugement professionnel par étape.</p>
             </div>
-            <span className="text-white/50 text-sm mt-4 self-end">→</span>
+            <span className="text-white/50 text-sm mt-6 self-end">→</span>
           </Link>
 
           <Link
             href="/dashboard/evaluation"
-            className="rounded-3xl p-7 flex flex-col justify-between min-h-36 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            className="rounded-3xl p-10 flex flex-col justify-between min-h-72 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 75%, black)' }}
           >
             <div>
-              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">Outils d&apos;évaluation</h3>
+              <h3 className="text-2xl font-bold text-white mb-3 leading-tight">Outils d&apos;évaluation</h3>
               <p className="text-white/70 text-sm leading-relaxed">Grilles d&apos;évaluation, d&apos;observation et conversations.</p>
             </div>
-            <span className="text-white/50 text-sm mt-4 self-end">→</span>
+            <span className="text-white/50 text-sm mt-6 self-end">→</span>
           </Link>
 
           <Link
             href="/dashboard/activities"
-            className="rounded-3xl p-7 flex flex-col justify-between min-h-36 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+            className="rounded-3xl p-10 flex flex-col justify-between min-h-72 shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
             style={{ backgroundColor: 'color-mix(in srgb, var(--color-nav) 68%, #047857)' }}
           >
             <div>
-              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">Banque d&apos;activités</h3>
+              <h3 className="text-2xl font-bold text-white mb-3 leading-tight">Banque d&apos;activités</h3>
               <p className="text-white/70 text-sm leading-relaxed">Créez et organisez vos activités réutilisables.</p>
             </div>
-            <span className="text-white/50 text-sm mt-4 self-end">→</span>
+            <span className="text-white/50 text-sm mt-6 self-end">→</span>
           </Link>
         </div>
       </div>

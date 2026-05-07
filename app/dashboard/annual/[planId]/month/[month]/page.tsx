@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import MonthlyGrid from './MonthlyGrid'
 import EvalLinksSection from '../../EvalLinksSection'
+import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const MONTH_LABELS: Record<number, string> = {
   8: 'Août', 9: 'Septembre', 10: 'Octobre', 11: 'Novembre', 12: 'Décembre',
@@ -69,6 +70,14 @@ export default async function MonthPage({
     ? (plan.subjects as any)?.name_fr
     : 'Toutes les matières'
 
+  const [startYearStr] = plan.school_year.split('-')
+  const startYear = parseInt(startYearStr)
+  const calYear = month >= 8 ? startYear : startYear + 1
+  const monthStart = `${calYear}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(calYear, month, 0).getDate()
+  const monthEnd = `${calYear}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const calendarEvents = await getCalendarEventsInRange(monthStart, monthEnd)
+
   const SCHOOL_MONTHS = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]
   const currentIdx = SCHOOL_MONTHS.indexOf(month)
   const prevMonth = currentIdx > 0 ? SCHOOL_MONTHS[currentIdx - 1] : null
@@ -120,6 +129,7 @@ export default async function MonthPage({
           monthAssignments={(monthAssignments ?? []) as any[]}
           weekNotes={(weekNotes ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
+          calendarEvents={calendarEvents}
         />
       )}
     </main>
