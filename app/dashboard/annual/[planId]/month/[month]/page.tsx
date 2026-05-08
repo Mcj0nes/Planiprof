@@ -53,7 +53,7 @@ export default async function MonthPage({
     contentQuery,
     supabase
       .from('plan_assignments')
-      .select('id, month, week_start, content_item_id')
+      .select('id, month, week_start, content_item_id, is_taught')
       .eq('annual_plan_id', planId)
       .eq('month', month),
     supabase

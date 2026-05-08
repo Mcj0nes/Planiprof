@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
-import { assignToWeek, removeFromWeek, saveWeekNote } from './actions'
+import { assignToWeek, removeFromWeek, saveWeekNote, toggleTaught } from './actions'
 import { assignActivityToContent, unassignActivityFromContent } from '../../actions'
 import ActivityModal from '../../ActivityModal'
 
@@ -83,7 +83,7 @@ type ContentItem = {
   competencies: Competency | null
 }
 type MonthAssignment = {
-  id: string; month: number; week_start: string | null; content_item_id: number
+  id: string; month: number; week_start: string | null; content_item_id: number; is_taught?: boolean
 }
 type WeekNote = {
   week_start: string; special_activities: string | null; reflective_review: string | null
@@ -151,6 +151,14 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
       reflective_review: n.reflective_review ?? '',
     }]))
   )
+  function handleToggleTaught(assignmentId: string) {
+    const current = localAssignments.find(a => a.id === assignmentId)
+    if (!current) return
+    const newVal = !current.is_taught
+    setLocalAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, is_taught: newVal } : a))
+    startTransition(async () => { await toggleTaught(assignmentId, newVal) })
+  }
+
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   function handleNoteChange(weekStart: string, field: 'special_activities' | 'reflective_review', value: string) {
@@ -172,7 +180,9 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
   // Sidebar: items that have a month-level assignment but no week yet
   const sidebarItems = contentItems.filter(i => monthAssignedIds.has(i.id) && !weekAssignedIds.has(i.id))
 
-  // Progress
+  const taughtCount = localAssignments.filter(a => a.is_taught).length
+  // Progress: two segments — taught (green) and week-assigned-not-taught (blue)
+  const progressTaught = monthAssignedIds.size ? (taughtCount / monthAssignedIds.size) * 100 : 0
   const progress = monthAssignedIds.size ? (weekAssignedIds.size / monthAssignedIds.size) * 100 : 0
 
   // Group sidebar items by competency
@@ -229,10 +239,16 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
         <div className="px-5 py-4 border-b">
           <div className="flex justify-between items-baseline mb-2">
             <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">À planifier</p>
-            <p className="text-xs text-gray-400 tabular-nums">{weekAssignedIds.size} / {monthAssignedIds.size}</p>
+            <div className="flex items-center gap-2">
+              {taughtCount > 0 && (
+                <span className="text-[0.65rem] font-semibold text-emerald-600 tabular-nums">✓ {taughtCount} enseigné{taughtCount > 1 ? 's' : ''}</span>
+              )}
+              <p className="text-xs text-gray-400 tabular-nums">{weekAssignedIds.size} / {monthAssignedIds.size}</p>
+            </div>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6366F1' }} />
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+            <div className="h-full transition-all duration-500 bg-emerald-400" style={{ width: `${progressTaught}%` }} />
+            <div className="h-full transition-all duration-500 bg-indigo-400" style={{ width: `${Math.max(0, progress - progressTaught)}%` }} />
           </div>
 
           {selected && (
@@ -380,17 +396,24 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
                 <div className="flex-1 p-2 flex flex-col gap-1.5">
                   {weekItems.map(({ assignment, item }) => {
                     const pcaCount = localPca.filter(p => p.content_item_id === item.id).length
+                    const isTaught = assignment.is_taught ?? false
                     return (
                       <div
                         key={assignment.id}
-                        className="group/item flex items-start gap-1.5 text-xs px-2.5 py-2 rounded-lg cursor-pointer"
-                        style={{ backgroundColor: bg, borderLeft: `3px solid ${border}` }}
+                        className="group/item flex items-start gap-1.5 text-xs px-2.5 py-2 rounded-lg cursor-pointer transition-colors"
+                        style={{
+                          backgroundColor: isTaught ? '#D1FAE5' : bg,
+                          borderLeft: `3px solid ${isTaught ? '#10B981' : border}`,
+                        }}
                         onClick={e => { e.stopPropagation(); if (!isAssignMode) setActivityModal(item) }}
                         title="Cliquer pour voir les activités"
                       >
                         <span className="shrink-0 text-xs">{domainEmoji(item.competencies?.name_fr ?? '')}</span>
-                        <span className="flex-1 leading-snug font-medium text-[0.8rem]" style={{ color: text }}>{item.name_fr}</span>
-                        {pcaCount > 0 && (
+                        <span
+                          className={`flex-1 leading-snug font-medium text-[0.8rem] ${isTaught ? 'line-through opacity-60' : ''}`}
+                          style={{ color: isTaught ? '#065F46' : text }}
+                        >{item.name_fr}</span>
+                        {pcaCount > 0 && !isTaught && (
                           <span
                             className="shrink-0 text-[0.6rem] font-bold px-1 py-0.5 rounded-full"
                             style={{ backgroundColor: `${text}25`, color: text }}
@@ -401,8 +424,15 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
                         )}
                         {!isAssignMode && (
                           <button
+                            onClick={e => { e.stopPropagation(); handleToggleTaught(assignment.id) }}
+                            className={`shrink-0 text-[0.8rem] leading-none transition-all font-bold ${isTaught ? 'text-emerald-600 opacity-100' : 'text-gray-300 opacity-0 group-hover/item:opacity-80'}`}
+                            title={isTaught ? 'Marquer comme non-enseigné' : 'Marquer comme enseigné ✓'}
+                          >{isTaught ? '✓' : '✓'}</button>
+                        )}
+                        {!isAssignMode && !isTaught && (
+                          <button
                             onClick={e => { e.stopPropagation(); handleRemoveFromWeek(assignment) }}
-                            className="shrink-0 opacity-0 group-hover/item:opacity-50 hover:!opacity-100 text-[0.75rem] leading-none transition-opacity"
+                            className="shrink-0 opacity-0 group-hover/item:opacity-40 hover:!opacity-100 text-[0.75rem] leading-none transition-opacity"
                             style={{ color: text }}
                             title="Déplacer"
                           >×</button>

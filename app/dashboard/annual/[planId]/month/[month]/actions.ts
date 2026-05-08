@@ -59,6 +59,17 @@ export async function removeFromWeek(assignmentId: string, planId: string, month
   revalidatePath(`/dashboard/annual/${planId}/month/${month}`)
 }
 
+export async function toggleTaught(assignmentId: string, isTaught: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  await supabase
+    .from('plan_assignments')
+    .update({ is_taught: isTaught })
+    .eq('id', assignmentId)
+}
+
 export async function saveWeekNote(
   planId: string,
   weekStart: string,
