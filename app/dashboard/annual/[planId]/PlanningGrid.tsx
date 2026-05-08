@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { assignToMonth, unassign, assignProjectToMonth, unassignProject, assignActivityToContent, unassignActivityFromContent } from './actions'
 import ActivityModal from './ActivityModal'
+import type { NouveauCycleItems } from './nouveauProgrammeData'
 
 const SUBJECT_SYMBOL = 'π'
 
@@ -142,6 +143,7 @@ type Props = {
   importedAssignments?: Assignment[]
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
+  nouveauItems?: NouveauCycleItems
 }
 
 export default function PlanningGrid({
@@ -154,6 +156,7 @@ export default function PlanningGrid({
   importedAssignments = [],
   planContentActivities = [],
   calendarEvents = [],
+  nouveauItems,
 }: Props) {
   const [localAssignments, setLocalAssignments] = useState<Assignment[]>(assignments)
   const [localProjectAssignments, setLocalProjectAssignments] = useState<ProjectAssignment[]>(projectAssignments)
@@ -185,6 +188,7 @@ export default function PlanningGrid({
   const [draggedItem, setDraggedItem]                       = useState<ContentItem | null>(null)
   const [dragOverMonth, setDragOverMonth]                   = useState<number | null>(null)
   const [activityModal, setActivityModal] = useState<ContentItem | null>(null)
+  const [sidebarTab, setSidebarTab] = useState<'contenu' | 'nouveau'>('contenu')
 
   function handleTogglePca(contentItemId: number, actId: string | null, tplId: string | null) {
     const assigned = localPca.some(p =>
@@ -539,18 +543,27 @@ export default function PlanningGrid({
         {/* Progress header */}
         <div className="px-5 py-4 border-b">
           <div className="flex justify-between items-baseline mb-2">
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Contenus</p>
-            <p className="text-xs text-gray-400 tabular-nums">{totalAssigned} / {totalAssignable}</p>
+            {nouveauItems ? (
+              <div className="flex gap-1">
+                <button onClick={() => setSidebarTab('contenu')} className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded transition ${sidebarTab === 'contenu' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-400 hover:text-gray-600'}`}>Contenus</button>
+                <button onClick={() => setSidebarTab('nouveau')} className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded transition ${sidebarTab === 'nouveau' ? 'bg-yellow-100 text-yellow-800' : 'text-gray-400 hover:text-gray-600'}`}>✨ Nouveau</button>
+              </div>
+            ) : (
+              <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Contenus</p>
+            )}
+            {sidebarTab === 'contenu' && <p className="text-xs text-gray-400 tabular-nums">{totalAssigned} / {totalAssignable}</p>}
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress}%`, backgroundColor: '#6366F1' }}
-            />
-          </div>
+          {sidebarTab === 'contenu' && (
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progress}%`, backgroundColor: '#6366F1' }}
+              />
+            </div>
+          )}
 
           {/* Selected item banner */}
-          {selected && (
+          {sidebarTab === 'contenu' && selected && (
             <div
               className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg"
               style={{ backgroundColor: isDuplicating ? '#EFF6FF' : `${selectedColor}15` }}
@@ -575,7 +588,19 @@ export default function PlanningGrid({
           )}
         </div>
 
-        {isMultiSubject ? renderMultiSubjectSidebar() : renderSingleSubjectSidebar()}
+        {sidebarTab === 'nouveau' && nouveauItems ? (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            <p className="text-[0.65rem] font-bold uppercase tracking-wider mb-1" style={{ color: nouveauItems.color }}>{nouveauItems.cycleLabel}</p>
+            {nouveauItems.nouveau.map((item, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ backgroundColor: nouveauItems.color }} />
+                <p className="text-[0.78rem] text-gray-700 leading-snug">{item}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          isMultiSubject ? renderMultiSubjectSidebar() : renderSingleSubjectSidebar()
+        )}
       </aside>
 
       {/* ── Project popover ────────────────────────────────────── */}

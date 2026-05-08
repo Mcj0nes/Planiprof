@@ -7,6 +7,7 @@ import EtapePlanningGrid from './EtapePlanningGrid'
 import ThemePlanningGrid from './ThemePlanningGrid'
 import EvalLinksSection from './EvalLinksSection'
 import NouveauProgrammePanel from './NouveauProgrammePanel'
+import { getNouveauItemsForGrade } from './nouveauProgrammeData'
 import { getCalendarEvents } from '@/app/dashboard/school-calendar/actions'
 
 export default async function AnnualPlanPage({
@@ -36,6 +37,8 @@ export default async function AnnualPlanPage({
 
   const isMultiSubject = !plan.subject_id
   const isFrancais = !isMultiSubject && (plan.subjects as any)?.slug === 'francais'
+  const gradeLabelFr = (plan.grade_levels as any)?.label_fr as string | undefined
+  const nouveauItems = isFrancais && gradeLabelFr ? getNouveauItemsForGrade(gradeLabelFr) : null
   const planningModel = (plan as any).planning_model as string
   const isParEtape = planningModel === 'par-etape'
   const isParTheme = planningModel === 'par-theme'
@@ -165,6 +168,7 @@ export default async function AnnualPlanPage({
           themeConfigs={(themeConfigs ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
+          nouveauItems={nouveauItems ?? undefined}
         />
       ) : isParEtape ? (
         <EtapePlanningGrid
@@ -174,6 +178,7 @@ export default async function AnnualPlanPage({
           etapeConfigs={(etapeConfigs ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
+          nouveauItems={nouveauItems ?? undefined}
         />
       ) : (
         <PlanningGrid
@@ -186,6 +191,7 @@ export default async function AnnualPlanPage({
           importedAssignments={importedAssignments}
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
+          nouveauItems={nouveauItems ?? undefined}
         />
       )}
     </main>

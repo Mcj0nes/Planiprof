@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { assignToTheme, unassignFromTheme, assignActivityToContent, unassignActivityFromContent } from './actions'
+import type { NouveauCycleItems } from './nouveauProgrammeData'
 import ActivityModal from './ActivityModal'
 
 function domainEmoji(name: string): string {
@@ -65,14 +66,16 @@ type Props = {
   themeConfigs: ThemeConfig[]
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
+  nouveauItems?: NouveauCycleItems
 }
 
-export default function ThemePlanningGrid({ planId, contentItems, assignments, themeConfigs, planContentActivities = [], calendarEvents = [] }: Props) {
+export default function ThemePlanningGrid({ planId, contentItems, assignments, themeConfigs, planContentActivities = [], calendarEvents = [], nouveauItems }: Props) {
   const [localAssignments, setLocalAssignments] = useState<ThemeAssignment[]>(assignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
   const [, startTransition] = useTransition()
   const [activityModal, setActivityModal] = useState<ContentItem | null>(null)
+  const [sidebarTab, setSidebarTab] = useState<'contenu' | 'nouveau'>('contenu')
 
   function handleTogglePca(contentItemId: number, actId: string | null, tplId: string | null) {
     const assigned = localPca.some(p => p.content_item_id === contentItemId && p.activity_id === actId && p.template_id === tplId)
@@ -128,64 +131,87 @@ export default function ThemePlanningGrid({ planId, contentItems, assignments, t
       <aside className="w-72 shrink-0 bg-white border-r flex flex-col">
         <div className="px-5 py-4 border-b">
           <div className="flex justify-between items-baseline mb-2">
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Contenus</p>
-            <p className="text-xs text-gray-400 tabular-nums">{totalAssigned} / {totalAssignable}</p>
+            {nouveauItems ? (
+              <div className="flex gap-1">
+                <button onClick={() => setSidebarTab('contenu')} className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded transition ${sidebarTab === 'contenu' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-400 hover:text-gray-600'}`}>Contenus</button>
+                <button onClick={() => setSidebarTab('nouveau')} className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded transition ${sidebarTab === 'nouveau' ? 'bg-yellow-100 text-yellow-800' : 'text-gray-400 hover:text-gray-600'}`}>✨ Nouveau</button>
+              </div>
+            ) : (
+              <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Contenus</p>
+            )}
+            {sidebarTab === 'contenu' && <p className="text-xs text-gray-400 tabular-nums">{totalAssigned} / {totalAssignable}</p>}
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6366F1' }} />
-          </div>
-          {selected && (
-            <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${selectedColor}15` }}>
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
-              <p className="text-xs text-gray-700 flex-1 truncate font-medium leading-snug">{selected.name_fr}</p>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xs shrink-0">✕</button>
-            </div>
+          {sidebarTab === 'contenu' && (
+            <>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6366F1' }} />
+              </div>
+              {selected && (
+                <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${selectedColor}15` }}>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
+                  <p className="text-xs text-gray-700 flex-1 truncate font-medium leading-snug">{selected.name_fr}</p>
+                  <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xs shrink-0">✕</button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {competencies.map(comp => {
-            const items = unassignedItems.filter(i => i.competency_id === comp.id)
-            if (items.length === 0) return null
-            return (
-              <div key={comp.id} className="border-b last:border-0">
-                <div className="flex items-center gap-2.5 px-5 py-2.5" style={{ borderLeft: `3px solid ${comp.color ?? '#94A3B8'}` }}>
-                  <span className="text-sm">{domainEmoji(comp.name_fr)}</span>
-                  <p className="text-xs font-bold flex-1 leading-snug" style={{ color: comp.color ?? '#6B7280' }}>{comp.name_fr}</p>
-                  <span className="text-xs rounded-full px-1.5 py-0.5 font-medium" style={{ backgroundColor: `${comp.color ?? '#94A3B8'}15`, color: comp.color ?? '#6B7280' }}>{items.length}</span>
-                </div>
-                <ul className="px-3 pb-3 flex flex-col gap-1">
-                  {items.map(item => {
-                    const isSelected = selected?.id === item.id
-                    const color = comp.color ?? '#6366F1'
-                    return (
-                      <li key={item.id}>
-                        <button
-                          onClick={() => setActivityModal(item)}
-                          className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
-                          style={isSelected
-                            ? { backgroundColor: color, borderColor: 'transparent', color: '#fff', fontWeight: 600 }
-                            : { backgroundColor: '#fff', borderColor: '#E5E7EB', color: '#374151', fontWeight: 500 }
-                          }
-                          onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = color }}
-                          onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB' }}
-                        >
-                          <span className="mr-1.5 opacity-70">{domainEmoji(comp.name_fr)}</span>{item.name_fr}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
+        {sidebarTab === 'nouveau' && nouveauItems ? (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            <p className="text-[0.65rem] font-bold uppercase tracking-wider mb-1" style={{ color: nouveauItems.color }}>{nouveauItems.cycleLabel}</p>
+            {nouveauItems.nouveau.map((item, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ backgroundColor: nouveauItems.color }} />
+                <p className="text-[0.78rem] text-gray-700 leading-snug">{item}</p>
               </div>
-            )
-          })}
-          {unassignedItems.length === 0 && totalAssignable > 0 && (
-            <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
-              <div className="text-3xl mb-2">🎉</div>
-              <p className="text-sm font-semibold text-gray-700">Tout est planifié!</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            {competencies.map(comp => {
+              const items = unassignedItems.filter(i => i.competency_id === comp.id)
+              if (items.length === 0) return null
+              return (
+                <div key={comp.id} className="border-b last:border-0">
+                  <div className="flex items-center gap-2.5 px-5 py-2.5" style={{ borderLeft: `3px solid ${comp.color ?? '#94A3B8'}` }}>
+                    <span className="text-sm">{domainEmoji(comp.name_fr)}</span>
+                    <p className="text-xs font-bold flex-1 leading-snug" style={{ color: comp.color ?? '#6B7280' }}>{comp.name_fr}</p>
+                    <span className="text-xs rounded-full px-1.5 py-0.5 font-medium" style={{ backgroundColor: `${comp.color ?? '#94A3B8'}15`, color: comp.color ?? '#6B7280' }}>{items.length}</span>
+                  </div>
+                  <ul className="px-3 pb-3 flex flex-col gap-1">
+                    {items.map(item => {
+                      const isSelected = selected?.id === item.id
+                      const color = comp.color ?? '#6366F1'
+                      return (
+                        <li key={item.id}>
+                          <button
+                            onClick={() => setActivityModal(item)}
+                            className="w-full text-left text-xs px-3 py-2 rounded-lg border transition-all"
+                            style={isSelected
+                              ? { backgroundColor: color, borderColor: 'transparent', color: '#fff', fontWeight: 600 }
+                              : { backgroundColor: '#fff', borderColor: '#E5E7EB', color: '#374151', fontWeight: 500 }
+                            }
+                            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = color }}
+                            onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB' }}
+                          >
+                            <span className="mr-1.5 opacity-70">{domainEmoji(comp.name_fr)}</span>{item.name_fr}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )
+            })}
+            {unassignedItems.length === 0 && totalAssignable > 0 && (
+              <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                <div className="text-3xl mb-2">🎉</div>
+                <p className="text-sm font-semibold text-gray-700">Tout est planifié!</p>
+              </div>
+            )}
+          </div>
+        )}
       </aside>
 
       {/* Activity modal */}
