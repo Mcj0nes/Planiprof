@@ -121,19 +121,19 @@ export default async function AnnualPlanPage({
         <div className="flex gap-2">
           <Link
             href={`/dashboard/annual/${planId}`}
-            className={`px-5 py-2 rounded-xl text-sm font-semibold transition ${activeTab === 'contenu' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
+            className={`px-8 py-3 rounded-2xl text-base font-semibold transition ${activeTab === 'contenu' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
           >
             Contenu
           </Link>
           <Link
             href={`/dashboard/annual/${planId}?tab=evaluation`}
-            className={`px-5 py-2 rounded-xl text-sm font-semibold transition ${activeTab === 'evaluation' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
+            className={`px-8 py-3 rounded-2xl text-base font-semibold transition ${activeTab === 'evaluation' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
           >
             Évaluation
           </Link>
           <Link
             href={`/dashboard/annual/${planId}/import`}
-            className="px-5 py-2 rounded-xl text-sm font-semibold transition bg-white/15 text-white hover:bg-white/25"
+            className="px-8 py-3 rounded-2xl text-base font-semibold transition bg-white/15 text-white hover:bg-white/25"
             title="Importer depuis un fichier Excel"
           >
             ⬆ Importer
