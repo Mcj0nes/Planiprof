@@ -6,6 +6,7 @@ import PlanningGrid from './PlanningGrid'
 import EtapePlanningGrid from './EtapePlanningGrid'
 import ThemePlanningGrid from './ThemePlanningGrid'
 import EvalLinksSection from './EvalLinksSection'
+import NouveauProgrammePanel from './NouveauProgrammePanel'
 import { getCalendarEvents } from '@/app/dashboard/school-calendar/actions'
 
 export default async function AnnualPlanPage({
@@ -17,7 +18,7 @@ export default async function AnnualPlanPage({
 }) {
   const { planId } = await params
   const sp = await searchParams
-  const activeTab = sp.tab === 'evaluation' ? 'evaluation' : 'contenu'
+  const activeTab = sp.tab === 'evaluation' ? 'evaluation' : sp.tab === 'nouveau-programme' ? 'nouveau-programme' : 'contenu'
   const section = sp.section
 
   const supabase = await createClient()
@@ -26,7 +27,7 @@ export default async function AnnualPlanPage({
 
   const { data: plan } = await supabase
     .from('annual_plans')
-    .select('id, school_year, title, subject_id, grade_level_id, planning_model, subjects(name_fr, color), grade_levels(label_fr)')
+    .select('id, school_year, title, subject_id, grade_level_id, planning_model, subjects(name_fr, color, slug), grade_levels(label_fr)')
     .eq('id', planId)
     .eq('user_id', user.id)
     .single()
@@ -34,6 +35,7 @@ export default async function AnnualPlanPage({
   if (!plan) notFound()
 
   const isMultiSubject = !plan.subject_id
+  const isFrancais = !isMultiSubject && (plan.subjects as any)?.slug === 'francais'
   const planningModel = (plan as any).planning_model as string
   const isParEtape = planningModel === 'par-etape'
   const isParTheme = planningModel === 'par-theme'
@@ -131,6 +133,14 @@ export default async function AnnualPlanPage({
           >
             Évaluation
           </Link>
+          {isFrancais && (
+            <Link
+              href={`/dashboard/annual/${planId}?tab=nouveau-programme`}
+              className={`px-8 py-3 rounded-2xl text-base font-semibold transition ${activeTab === 'nouveau-programme' ? 'bg-yellow-400 text-yellow-900 shadow' : 'bg-yellow-400/80 text-yellow-900 hover:bg-yellow-400'}`}
+            >
+              ✨ Nouveau programme
+            </Link>
+          )}
           <Link
             href={`/dashboard/annual/${planId}/import`}
             className="px-8 py-3 rounded-2xl text-base font-semibold transition bg-white/15 text-white hover:bg-white/25"
@@ -141,7 +151,9 @@ export default async function AnnualPlanPage({
         </div>
       </nav>
 
-      {activeTab === 'evaluation' ? (
+      {activeTab === 'nouveau-programme' ? (
+        <NouveauProgrammePanel />
+      ) : activeTab === 'evaluation' ? (
         <Suspense>
           <EvalLinksSection planId={planId} gradeId={plan.grade_level_id} subjectId={plan.subject_id ?? null} section={section} />
         </Suspense>

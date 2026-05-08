@@ -3,8 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { assignToMonth, unassign, assignProjectToMonth, unassignProject, assignActivityToContent, unassignActivityFromContent } from './actions'
-import { getSuggestedActivitiesForContent } from '../../activities/actions'
-import { createClient } from '@/lib/supabase/client'
+import ActivityModal from './ActivityModal'
 
 const SUBJECT_SYMBOL = 'π'
 
@@ -185,53 +184,15 @@ export default function PlanningGrid({
   const [expandedUnplacedGroup, setExpandedUnplacedGroup]   = useState<number | null>(null)
   const [draggedItem, setDraggedItem]                       = useState<ContentItem | null>(null)
   const [dragOverMonth, setDragOverMonth]                   = useState<number | null>(null)
-  type ActivityEntry = { id: string; title: string; type_tag: string | null; duration_min: number | null; is_template: boolean }
-  const [activityModal, setActivityModal]     = useState<{
-    contentItem: ContentItem
-    loading: boolean
-    activities: ActivityEntry[]
-    suggestions: ActivityEntry[]
-  } | null>(null)
-
-  async function openActivityModal(item: ContentItem) {
-    setActivityModal({ contentItem: item, loading: true, activities: [], suggestions: [] })
-    const supabase = createClient()
-    const [actLinksRes, tplLinksRes] = await Promise.all([
-      supabase.from('activity_content_items').select('activity_id').eq('content_item_id', item.id),
-      supabase.from('template_content_items').select('template_id').eq('content_item_id', item.id),
-    ])
-    const actIds = (actLinksRes.data ?? []).map((l: any) => l.activity_id)
-    const tplIds = (tplLinksRes.data ?? []).map((l: any) => l.template_id)
-    const [actsRes, tplsRes, suggestions] = await Promise.all([
-      actIds.length > 0
-        ? supabase.from('activities').select('id, title, type_tag, duration_min').in('id', actIds)
-        : Promise.resolve({ data: [] as any[] }),
-      tplIds.length > 0
-        ? supabase.from('activity_templates').select('id, title, type_tag, duration_min').in('id', tplIds)
-        : Promise.resolve({ data: [] as any[] }),
-      getSuggestedActivitiesForContent(item.id, actIds, tplIds),
-    ])
-    const activities = [
-      ...(actsRes.data ?? []).map((a: any) => ({ ...a, is_template: false })),
-      ...(tplsRes.data ?? []).map((t: any) => ({ ...t, is_template: true })),
-    ]
-    setActivityModal(prev => prev ? { ...prev, loading: false, activities, suggestions } : null)
-  }
-
-  function isPcaAssigned(contentItemId: number, actId: string | null, tplId: string | null) {
-    return localPca.some(p =>
-      p.content_item_id === contentItemId &&
-      p.activity_id === actId &&
-      p.template_id === tplId
-    )
-  }
+  const [activityModal, setActivityModal] = useState<ContentItem | null>(null)
 
   function handleTogglePca(contentItemId: number, actId: string | null, tplId: string | null) {
-    if (isPcaAssigned(contentItemId, actId, tplId)) {
+    const assigned = localPca.some(p =>
+      p.content_item_id === contentItemId && p.activity_id === actId && p.template_id === tplId
+    )
+    if (assigned) {
       setLocalPca(prev => prev.filter(p => !(
-        p.content_item_id === contentItemId &&
-        p.activity_id === actId &&
-        p.template_id === tplId
+        p.content_item_id === contentItemId && p.activity_id === actId && p.template_id === tplId
       )))
       startTransition(async () => { await unassignActivityFromContent(planId, contentItemId, actId, tplId) })
     } else {
@@ -529,7 +490,7 @@ export default function PlanningGrid({
       <li key={item.id} className="flex items-center gap-1">
         <ProgressionBadge type={pt} />
         <button
-          onClick={() => openActivityModal(item)}
+          onClick={() => setActivityModal(item)}
           className="flex-1 text-left text-xs px-3 py-2 rounded-lg border transition-all"
           style={isSelected
             ? { backgroundColor: itemColor, borderColor: 'transparent', color: '#fff', fontWeight: 600, fontSize: '0.8rem' }
@@ -701,6 +662,13 @@ export default function PlanningGrid({
             style={{ left: `${itemMenu.x}px`, top: `${itemMenu.y}px` }}
           >
             <button
+              onClick={() => { setActivityModal(itemMenu.item); setItemMenu(null) }}
+              className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 transition"
+            >
+              <span>📚</span> Activités
+            </button>
+            <div className="border-t border-gray-100" />
+            <button
               onClick={handleMoveItem}
               className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
@@ -723,134 +691,18 @@ export default function PlanningGrid({
         </>
       )}
 
-      {/* ── Activity suggestion modal ──────────────────────────── */}
+      {/* ── Activity modal ─────────────────────────────────────── */}
       {activityModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setActivityModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="px-5 py-4 border-b"
-              style={{ backgroundColor: `${activityModal.contentItem.competencies?.color ?? '#6366F1'}12` }}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  {activityModal.contentItem.competencies && (
-                    <p className="text-[0.65rem] font-bold uppercase tracking-wider mb-0.5"
-                      style={{ color: activityModal.contentItem.competencies.color ?? '#6366F1' }}>
-                      {activityModal.contentItem.competencies.name_fr}
-                    </p>
-                  )}
-                  <p className="text-sm font-bold text-gray-800 leading-snug">{activityModal.contentItem.name_fr}</p>
-                </div>
-                <button onClick={() => setActivityModal(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none shrink-0 mt-0.5">×</button>
-              </div>
-            </div>
-
-            {/* Activities */}
-            <div className="p-5">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Activités associées</p>
-              {activityModal.loading && (
-                <p className="text-sm text-gray-400 text-center py-4">Chargement…</p>
-              )}
-              {!activityModal.loading && activityModal.activities.length === 0 && activityModal.suggestions.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-sm text-gray-400 mb-2">Aucune activité liée à ce contenu.</p>
-                  <a href="/dashboard/activities"
-                    className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition">
-                    Créer une activité dans la banque →
-                  </a>
-                </div>
-              )}
-              {!activityModal.loading && activityModal.activities.length > 0 && (
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {activityModal.activities.map(act => {
-                    const actId = act.is_template ? null : act.id
-                    const tplId = act.is_template ? act.id : null
-                    const assigned = isPcaAssigned(activityModal.contentItem.id, actId, tplId)
-                    return (
-                      <div key={act.id} className="flex items-center gap-2">
-                        <a href={`/dashboard/activities/present/${act.id}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="flex-1 flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition group min-w-0">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              {act.is_template && (
-                                <span className="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 shrink-0">Causerie</span>
-                              )}
-                              <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-600">{act.title}</p>
-                            </div>
-                            {(act.type_tag || act.duration_min) && (
-                              <p className="text-xs text-gray-400">
-                                {[act.type_tag, act.duration_min ? `${act.duration_min} min` : null].filter(Boolean).join(' · ')}
-                              </p>
-                            )}
-                          </div>
-                          <span className="text-gray-300 group-hover:text-indigo-400 transition text-xs shrink-0">▶</span>
-                        </a>
-                        <button
-                          onClick={() => handleTogglePca(activityModal.contentItem.id, actId, tplId)}
-                          title={assigned ? 'Retirer de la planification' : 'Ajouter à la planification'}
-                          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition"
-                          style={assigned
-                            ? { backgroundColor: '#EEF2FF', color: '#4F46E5' }
-                            : { backgroundColor: '#F3F4F6', color: '#9CA3AF' }
-                          }
-                        >
-                          {assigned ? '✓' : '+'}
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              {!activityModal.loading && activityModal.suggestions.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-2">✦ Suggestions</p>
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                    {activityModal.suggestions.map(act => {
-                      const actId = act.is_template ? null : act.id
-                      const tplId = act.is_template ? act.id : null
-                      const assigned = isPcaAssigned(activityModal.contentItem.id, actId, tplId)
-                      return (
-                        <div key={act.id} className="flex items-center gap-2">
-                          <a href={`/dashboard/activities/present/${act.id}`} target="_blank" rel="noopener noreferrer"
-                            className="flex-1 flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-transparent hover:border-amber-200 transition group min-w-0">
-                            <div className="flex-1 min-w-0">
-                              {act.is_template && (
-                                <span className="text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-600 shrink-0 mr-1">Causerie</span>
-                              )}
-                              <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-amber-700 inline">{act.title}</p>
-                              {(act.type_tag || act.duration_min) && (
-                                <p className="text-xs text-gray-400">{[act.type_tag, act.duration_min ? `${act.duration_min} min` : null].filter(Boolean).join(' · ')}</p>
-                              )}
-                            </div>
-                          </a>
-                          <button
-                            onClick={() => handleTogglePca(activityModal.contentItem.id, actId, tplId)}
-                            title={assigned ? 'Retirer' : 'Ajouter à la planification'}
-                            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition"
-                            style={assigned ? { backgroundColor: '#FEF3C7', color: '#B45309' } : { backgroundColor: '#F3F4F6', color: '#9CA3AF' }}
-                          >
-                            {assigned ? '✓' : '+'}
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 pb-5">
-              <button
-                onClick={() => { setSelected({ kind: 'item', data: activityModal.contentItem }); setActivityModal(null) }}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
-                style={{ backgroundColor: activityModal.contentItem.competencies?.color ?? '#6366F1' }}>
-                Assigner à un mois →
-              </button>
-            </div>
-          </div>
-        </div>
+        <ActivityModal
+          planId={planId}
+          contentItem={activityModal}
+          assignedPca={localPca.filter(p => p.content_item_id === activityModal.id)}
+          onClose={() => setActivityModal(null)}
+          onTogglePca={(actId, tplId) => handleTogglePca(activityModal.id, actId, tplId)}
+          onPcaAdded={activityId => setLocalPca(prev => [...prev, { content_item_id: activityModal.id, activity_id: activityId, template_id: null }])}
+          assignButtonLabel={assignedContentIds.has(activityModal.id) ? undefined : "Assigner à un mois →"}
+          onAssign={assignedContentIds.has(activityModal.id) ? undefined : () => { setSelected({ kind: 'item', data: activityModal }); setActivityModal(null) }}
+        />
       )}
 
       {/* ── Monthly grid ───────────────────────────────────────── */}
@@ -1127,7 +979,7 @@ export default function PlanningGrid({
                                     draggable
                                     onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; setDraggedItem(item); setShowUnplacedPanel(false) }}
                                     onDragEnd={() => setDraggedItem(null)}
-                                    onClick={() => { openActivityModal(item); setShowUnplacedPanel(false) }}
+                                    onClick={() => { setActivityModal(item); setShowUnplacedPanel(false) }}
                                     className="w-full text-left text-xs px-3 py-2 rounded-lg hover:bg-amber-50 flex items-center gap-2 transition cursor-grab active:cursor-grabbing"
                                   >
                                     <ProgressionBadge type={item.progression_type} />

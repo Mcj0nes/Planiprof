@@ -165,6 +165,65 @@ export async function assignActivityToContent(
   })
 }
 
+export async function createPrivateActivity(
+  planId: string,
+  contentItemId: number,
+  title: string,
+  description: string,
+  typeTag: string,
+  durationMin: number | null,
+  links: Array<{ url: string; label: string }>,
+  isPublic: boolean,
+): Promise<{ activityId: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  const { data: act, error } = await supabase.from('activities').insert({
+    user_id: user.id,
+    title: title.trim(),
+    description: description.trim() || null,
+    type_tag: typeTag.trim() || null,
+    duration_min: durationMin,
+    is_public: isPublic,
+  } as any).select('id').single()
+  if (error || !act) throw new Error('Erreur lors de la création de l\'activité')
+
+  await supabase.from('activity_content_items').insert({ activity_id: act.id, content_item_id: contentItemId })
+
+  await supabase.from('plan_content_activities').insert({
+    plan_id: planId,
+    content_item_id: contentItemId,
+    activity_id: act.id,
+    template_id: null,
+    user_id: user.id,
+  })
+
+  const validLinks = links.filter(l => l.url.trim())
+  if (validLinks.length > 0) {
+    await supabase.from('activity_links' as any).insert(
+      validLinks.map((l, i) => ({
+        activity_id: act.id,
+        user_id: user.id,
+        url: l.url.trim(),
+        label: l.label.trim() || null,
+        sort_order: i,
+      }))
+    )
+  }
+
+  return { activityId: act.id }
+}
+
+export async function addActivityToBank(activityId: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  await supabase.from('activities').update({ is_public: true } as any)
+    .eq('id', activityId).eq('user_id', user.id)
+}
+
 export async function unassignActivityFromContent(
   planId: string,
   contentItemId: number,
