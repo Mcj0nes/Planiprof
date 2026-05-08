@@ -108,6 +108,12 @@ function addDays(dateStr: string, days: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
+type HistoricalNote = {
+  schoolYear: string
+  weekStart: string
+  reflective_review: string
+}
+
 type Props = {
   planId: string
   schoolYear: string
@@ -117,10 +123,11 @@ type Props = {
   weekNotes: WeekNote[]
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
+  historicalNotes?: HistoricalNote[]
   planLabel?: string
 }
 
-export default function MonthlyGrid({ planId, schoolYear, month, contentItems, monthAssignments, weekNotes, planContentActivities = [], calendarEvents = [], planLabel = '' }: Props) {
+export default function MonthlyGrid({ planId, schoolYear, month, contentItems, monthAssignments, weekNotes, planContentActivities = [], calendarEvents = [], historicalNotes = [], planLabel = '' }: Props) {
   const [localAssignments, setLocalAssignments] = useState<MonthAssignment[]>(monthAssignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
@@ -440,6 +447,46 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
         </div>
       </div>
     </div>
+
+    {/* ── Historical reflective reviews ───────────────────────── */}
+    {historicalNotes.length > 0 && (() => {
+      const years = Array.from(new Set(historicalNotes.map(n => n.schoolYear))).sort().reverse()
+      return (
+        <div className="border-t bg-gray-50 px-4 py-6 print:hidden">
+          {years.map(year => {
+            const yearNotes = historicalNotes.filter(n => n.schoolYear === year)
+            const histWeeks = getWeeksForMonth(year, month)
+            const hasAny = histWeeks.some(w => yearNotes.some(n => n.weekStart === w.weekStart))
+            if (!hasAny) return null
+            return (
+              <div key={year} className="mb-8 last:mb-0">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                  Retour réflexif {year}
+                </h3>
+                <div className="flex gap-3 overflow-x-auto pb-1 min-w-0">
+                  {histWeeks.map(({ weekStart, label, bg, text }) => {
+                    const note = yearNotes.find(n => n.weekStart === weekStart)
+                    return (
+                      <div key={weekStart} className="flex-1 min-w-36 rounded-xl overflow-hidden border bg-white">
+                        <div className="px-3 py-2" style={{ backgroundColor: bg }}>
+                          <p className="text-xs font-bold" style={{ color: text }}>{label}</p>
+                        </div>
+                        <div className="px-3 py-2.5">
+                          {note
+                            ? <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{note.reflective_review}</p>
+                            : <p className="text-xs text-gray-300">—</p>
+                          }
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )
+    })()}
 
     {/* ── Print layout ─────────────────────────────────────────── */}
     <div className="hidden print:block p-8">

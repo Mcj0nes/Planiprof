@@ -77,7 +77,47 @@ export default async function MonthPage({
   const monthStart = `${calYear}-${String(month).padStart(2, '0')}-01`
   const lastDay = new Date(calYear, month, 0).getDate()
   const monthEnd = `${calYear}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-  const calendarEvents = await getCalendarEventsInRange(monthStart, monthEnd)
+
+  // First Monday on/before the 1st (same logic as MonthlyGrid) — for historical range query
+  const firstOfMonth = new Date(calYear, month - 1, 1)
+  const dowFirst = firstOfMonth.getDay()
+  const daysBackFirst = dowFirst === 0 ? 6 : dowFirst - 1
+  const firstWeekDate = new Date(calYear, month - 1, 1 - daysBackFirst)
+  const firstWeekStart = `${firstWeekDate.getFullYear()}-${String(firstWeekDate.getMonth() + 1).padStart(2, '0')}-${String(firstWeekDate.getDate()).padStart(2, '0')}`
+
+  const [calendarEvents, siblingPlansRes] = await Promise.all([
+    getCalendarEventsInRange(monthStart, monthEnd),
+    (() => {
+      let q = supabase
+        .from('annual_plans')
+        .select('id, school_year')
+        .eq('user_id', user.id)
+        .eq('grade_level_id', plan.grade_level_id)
+        .neq('id', planId)
+        .order('school_year', { ascending: false })
+      if (plan.subject_id) q = q.eq('subject_id', plan.subject_id)
+      else q = (q as any).is('subject_id', null)
+      return q
+    })(),
+  ])
+
+  const siblingPlans = siblingPlansRes.data ?? []
+  const siblingPlanIds = siblingPlans.map((p: any) => p.id)
+  let historicalNotes: { schoolYear: string; weekStart: string; reflective_review: string }[] = []
+  if (siblingPlanIds.length > 0) {
+    const { data: histRows } = await supabase
+      .from('week_notes')
+      .select('annual_plan_id, week_start, reflective_review')
+      .in('annual_plan_id', siblingPlanIds)
+      .gte('week_start', firstWeekStart)
+      .lte('week_start', monthEnd)
+      .not('reflective_review', 'is', null)
+      .neq('reflective_review', '')
+    const yearMap = Object.fromEntries(siblingPlans.map((p: any) => [p.id, p.school_year]))
+    historicalNotes = (histRows ?? [])
+      .filter((r: any) => r.reflective_review)
+      .map((r: any) => ({ schoolYear: yearMap[r.annual_plan_id], weekStart: r.week_start, reflective_review: r.reflective_review }))
+  }
 
   const SCHOOL_MONTHS = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]
   const currentIdx = SCHOOL_MONTHS.indexOf(month)
@@ -132,6 +172,7 @@ export default async function MonthPage({
           weekNotes={(weekNotes ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
+          historicalNotes={historicalNotes}
           planLabel={`${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year} · ${MONTH_LABELS[month]}`}
         />
       )}

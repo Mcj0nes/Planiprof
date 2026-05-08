@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import NewPlanForm from './NewPlanForm'
 import DeletePlanButton from './DeletePlanButton'
+import DuplicatePlanButton from './DuplicatePlanButton'
 
 export default async function AnnualPlansPage() {
   const supabase = await createClient()
@@ -57,7 +58,8 @@ export default async function AnnualPlansPage() {
                     <p className="text-sm text-gray-500">{plan.grade_levels?.label_fr}</p>
                     {plan.title && <p className="text-xs text-indigo-500 mt-1">{plan.title}</p>}
                   </Link>
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3 flex gap-1 items-center">
+                    <DuplicatePlanButton planId={plan.id} planYear={plan.school_year} />
                     <DeletePlanButton planId={plan.id} />
                   </div>
                 </div>
