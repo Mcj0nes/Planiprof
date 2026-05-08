@@ -14,8 +14,18 @@ export type CalendarEvent = {
 function isUsableLabel(label: string): boolean {
   const t = (label ?? '').trim()
   if (t.length < 3) return false
-  if (/^\d{1,2}$/.test(t)) return false  // bare day number
-  if (/^\d{4}$/.test(t)) return false     // bare year
+  if (/^\d{1,2}$/.test(t)) return false                      // bare day number
+  if (/^\d{4}$/.test(t)) return false                        // bare year
+  if (/^[\d\s]+$/.test(t)) return false                      // number sequences: "2 3", "11 12 13 14 15"
+  // String is only day abbreviations/names ("Ven Sam", "SA SA", "Mar Mer Jeu Ven")
+  const noDays = t.replace(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|lu|ma|me|je|ve|sa|di|lun|mar|mer|jeu|ven|sam|dim)\b/gi, '').trim()
+  if (!noDays || /^[,.\s…\-–]+$/.test(noDays)) return false
+  // String is only month names + years ("Janvier 2026", "Novembre 2025 Décembre...")
+  const noMonthYear = t
+    .replace(/\b(janvier|f[eé]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[eé]cembre|jan|f[eé]v|avr|juil|sept|oct|nov|d[eé]c)\b/gi, '')
+    .replace(/\b\d{4}\b/g, '')
+    .trim()
+  if (!noMonthYear || /^[,.\s…\-–]+$/.test(noMonthYear)) return false
   return true
 }
 
@@ -251,12 +261,7 @@ function parsePdfText(
   // Returns false for pure day-numbers, bare month names, or very short strings
   // that result from the parser bleeding date components into the description field.
   function isValidDesc(desc: string): boolean {
-    const t = desc.trim()
-    if (t.length < 3) return false
-    if (/^\d{1,2}$/.test(t)) return false          // bare day number: "3", "14"
-    if (/^\d{4}$/.test(t)) return false             // bare year: "2025"
-    if (findMonth(t.split(/\s+/)[0]) !== undefined && t.split(/\s+/).length <= 2) return false // bare month
-    return true
+    return isUsableLabel(desc)
   }
 
   function addEvent(dateObj: Date, description: string) {
