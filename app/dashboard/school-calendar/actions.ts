@@ -11,6 +11,14 @@ export type CalendarEvent = {
   label: string
 }
 
+function isUsableLabel(label: string): boolean {
+  const t = (label ?? '').trim()
+  if (t.length < 3) return false
+  if (/^\d{1,2}$/.test(t)) return false  // bare day number
+  if (/^\d{4}$/.test(t)) return false     // bare year
+  return true
+}
+
 export async function getCalendarEvents(schoolYear: string): Promise<CalendarEvent[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -23,7 +31,7 @@ export async function getCalendarEvents(schoolYear: string): Promise<CalendarEve
     .eq('school_year', schoolYear)
     .order('event_date')
 
-  return (data ?? []) as CalendarEvent[]
+  return (data ?? []).filter(e => isUsableLabel(e.label)) as CalendarEvent[]
 }
 
 export async function getCalendarEventsInRange(
@@ -42,7 +50,7 @@ export async function getCalendarEventsInRange(
     .lte('event_date', endDate)
     .order('event_date')
 
-  return (data ?? []) as CalendarEvent[]
+  return (data ?? []).filter(e => isUsableLabel(e.label)) as CalendarEvent[]
 }
 
 export async function addCalendarEvent(
@@ -240,9 +248,21 @@ function parsePdfText(
     return month >= 8 ? startYear : startYear + 1
   }
 
+  // Returns false for pure day-numbers, bare month names, or very short strings
+  // that result from the parser bleeding date components into the description field.
+  function isValidDesc(desc: string): boolean {
+    const t = desc.trim()
+    if (t.length < 3) return false
+    if (/^\d{1,2}$/.test(t)) return false          // bare day number: "3", "14"
+    if (/^\d{4}$/.test(t)) return false             // bare year: "2025"
+    if (findMonth(t.split(/\s+/)[0]) !== undefined && t.split(/\s+/).length <= 2) return false // bare month
+    return true
+  }
+
   function addEvent(dateObj: Date, description: string) {
     if (isNaN(dateObj.getTime())) return
-    const { label, eventType } = resolveDescription(description || '(sans description)', legend)
+    if (!isValidDesc(description)) return
+    const { label, eventType } = resolveDescription(description, legend)
     events.push({ event_date: fmtDate(dateObj), event_type: eventType, label })
   }
 
@@ -294,6 +314,7 @@ function parsePdfText(
         const y = rf[4] ? parseInt(rf[4]) : inferYear(m)
         ctxMonth = m; ctxYear = y
         const desc = stripDate(line) || line
+        if (!isValidDesc(desc)) continue
         const { label, eventType } = resolveDescription(desc, legend)
         for (const d of datesInRange(new Date(y, m - 1, d1), new Date(y, m - 1, d2))) {
           events.push({ event_date: fmtDate(d), event_type: eventType, label })
@@ -327,7 +348,7 @@ function parsePdfText(
         const day = parseInt(dOnly[1])
         if (day >= 1 && day <= 31) {
           let desc = dOnly[2]?.trim() ?? ''
-          if (!desc && i + 1 < lines.length) desc = lines[i + 1].trim()
+          if (!desc && i + 1 < lines.length && isValidDesc(lines[i + 1])) desc = lines[i + 1].trim()
           if (desc) addEvent(new Date(ctxYear, ctxMonth - 1, day), desc)
         }
       }

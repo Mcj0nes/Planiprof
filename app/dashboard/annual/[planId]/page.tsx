@@ -131,6 +131,13 @@ export default async function AnnualPlanPage({
           >
             Évaluation
           </Link>
+          <Link
+            href={`/dashboard/annual/${planId}/import`}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium transition text-white/60 hover:text-white"
+            title="Importer depuis un fichier Excel"
+          >
+            ⬆ Importer
+          </Link>
         </div>
       </nav>
 
