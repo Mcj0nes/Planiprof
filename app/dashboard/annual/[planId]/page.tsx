@@ -118,22 +118,22 @@ export default async function AnnualPlanPage({
             {(plan.grade_levels as any)?.label_fr} · {plan.school_year}{plan.title && ` · ${plan.title}`}{modelTag}
           </span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           <Link
             href={`/dashboard/annual/${planId}`}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${activeTab === 'contenu' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold transition ${activeTab === 'contenu' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
           >
             Contenu
           </Link>
           <Link
             href={`/dashboard/annual/${planId}?tab=evaluation`}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${activeTab === 'evaluation' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}
+            className={`px-5 py-2 rounded-xl text-sm font-semibold transition ${activeTab === 'evaluation' ? 'bg-white text-indigo-700 shadow' : 'bg-white/15 text-white hover:bg-white/25'}`}
           >
             Évaluation
           </Link>
           <Link
             href={`/dashboard/annual/${planId}/import`}
-            className="px-4 py-1.5 rounded-lg text-sm font-medium transition text-white/60 hover:text-white"
+            className="px-5 py-2 rounded-xl text-sm font-semibold transition bg-white/15 text-white hover:bg-white/25"
             title="Importer depuis un fichier Excel"
           >
             ⬆ Importer
