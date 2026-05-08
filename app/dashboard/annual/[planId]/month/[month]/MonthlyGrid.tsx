@@ -326,7 +326,7 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
           </div>
         )}
 
-        <div className="flex gap-3 p-4 h-full min-w-[600px]">
+        <div className="flex gap-3 p-4 min-h-[calc(100vh-130px)] min-w-[600px]">
           {weeks.map(({ weekStart, label, bg, text, border }) => {
             const weekItems = getItemsForWeek(weekStart)
             const weekEnd = addDays(weekStart, 6)
@@ -445,48 +445,48 @@ export default function MonthlyGrid({ planId, schoolYear, month, contentItems, m
             )
           })}
         </div>
+
+        {/* ── Historical reflective reviews ─────────────────── */}
+        {historicalNotes.length > 0 && (() => {
+          const years = Array.from(new Set(historicalNotes.map(n => n.schoolYear))).sort().reverse()
+          return (
+            <div className="border-t bg-gray-50 px-4 py-6 min-w-[600px]">
+              {years.map(year => {
+                const yearNotes = historicalNotes.filter(n => n.schoolYear === year)
+                const histWeeks = getWeeksForMonth(year, month)
+                const hasAny = histWeeks.some(w => yearNotes.some(n => n.weekStart === w.weekStart))
+                if (!hasAny) return null
+                return (
+                  <div key={year} className="mb-8 last:mb-0">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                      Retour réflexif {year}
+                    </h3>
+                    <div className="flex gap-3">
+                      {histWeeks.map(({ weekStart, label, bg, text }) => {
+                        const note = yearNotes.find(n => n.weekStart === weekStart)
+                        return (
+                          <div key={weekStart} className="flex-1 min-w-36 rounded-xl overflow-hidden border bg-white">
+                            <div className="px-3 py-2" style={{ backgroundColor: bg }}>
+                              <p className="text-xs font-bold" style={{ color: text }}>{label}</p>
+                            </div>
+                            <div className="px-3 py-2.5">
+                              {note
+                                ? <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{note.reflective_review}</p>
+                                : <p className="text-xs text-gray-300">—</p>
+                              }
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
       </div>
     </div>
-
-    {/* ── Historical reflective reviews ───────────────────────── */}
-    {historicalNotes.length > 0 && (() => {
-      const years = Array.from(new Set(historicalNotes.map(n => n.schoolYear))).sort().reverse()
-      return (
-        <div className="border-t bg-gray-50 px-4 py-6 print:hidden">
-          {years.map(year => {
-            const yearNotes = historicalNotes.filter(n => n.schoolYear === year)
-            const histWeeks = getWeeksForMonth(year, month)
-            const hasAny = histWeeks.some(w => yearNotes.some(n => n.weekStart === w.weekStart))
-            if (!hasAny) return null
-            return (
-              <div key={year} className="mb-8 last:mb-0">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
-                  Retour réflexif {year}
-                </h3>
-                <div className="flex gap-3 overflow-x-auto pb-1 min-w-0">
-                  {histWeeks.map(({ weekStart, label, bg, text }) => {
-                    const note = yearNotes.find(n => n.weekStart === weekStart)
-                    return (
-                      <div key={weekStart} className="flex-1 min-w-36 rounded-xl overflow-hidden border bg-white">
-                        <div className="px-3 py-2" style={{ backgroundColor: bg }}>
-                          <p className="text-xs font-bold" style={{ color: text }}>{label}</p>
-                        </div>
-                        <div className="px-3 py-2.5">
-                          {note
-                            ? <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{note.reflective_review}</p>
-                            : <p className="text-xs text-gray-300">—</p>
-                          }
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )
-    })()}
 
     {/* ── Print layout ─────────────────────────────────────────── */}
     <div className="hidden print:block p-8">
