@@ -88,9 +88,10 @@ type Props = {
   weekNotes: WeekNote[]
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
+  planLabel?: string
 }
 
-export default function ThemeGrid({ planId, themeId, startDate, endDate, contentItems, themeAssignments, weekNotes, planContentActivities = [], calendarEvents = [] }: Props) {
+export default function ThemeGrid({ planId, themeId, startDate, endDate, contentItems, themeAssignments, weekNotes, planContentActivities = [], calendarEvents = [], planLabel = '' }: Props) {
   const [localAssignments, setLocalAssignments] = useState<ThemeAssignment[]>(themeAssignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
@@ -168,7 +169,8 @@ export default function ThemeGrid({ planId, themeId, startDate, endDate, content
   const isAssignMode = !!selected
 
   return (
-    <div className="flex h-[calc(100vh-65px)]">
+    <>
+    <div className="flex h-[calc(100vh-65px)] print:hidden">
 
       {/* Sidebar */}
       <aside className="w-72 shrink-0 bg-white border-r flex flex-col">
@@ -381,5 +383,39 @@ export default function ThemeGrid({ planId, themeId, startDate, endDate, content
         })()}
       </div>
     </div>
+
+    {/* ── Print layout ─────────────────────────────────────────── */}
+    <div className="hidden print:block p-8">
+      <style>{`@media print { @page { size: A4 landscape; margin: 1.5cm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`}</style>
+      <h1 className="text-base font-bold text-gray-900 mb-5">{planLabel}</h1>
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(weeks.length, 5)}, 1fr)` }}>
+        {weeks.map(week => {
+          const items = contentItems.filter(i => localAssignments.some(a => a.week_start === week.weekStart && a.content_item_id === i.id))
+          const note = notes[week.weekStart]
+          return (
+            <div key={week.weekStart} className="border rounded-lg overflow-hidden">
+              <div className="px-2 py-1.5" style={{ backgroundColor: week.bg }}>
+                <p className="font-bold text-xs" style={{ color: week.text }}>{week.label}</p>
+              </div>
+              <div className="p-2 flex flex-col gap-1">
+                {items.length === 0
+                  ? <p className="text-xs text-gray-400 italic">—</p>
+                  : items.map(item => (
+                    <div key={item.id} className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full mt-1 shrink-0" style={{ backgroundColor: item.competencies?.color ?? '#94A3B8' }} />
+                      <p className="text-[0.7rem] leading-snug text-gray-700">{item.name_fr}</p>
+                    </div>
+                  ))
+                }
+                {note?.special_activities && (
+                  <p className="text-[0.65rem] text-amber-700 mt-1 pt-1 border-t italic">{note.special_activities}</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+    </>
   )
 }

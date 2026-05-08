@@ -8,6 +8,7 @@ import ThemePlanningGrid from './ThemePlanningGrid'
 import EvalLinksSection from './EvalLinksSection'
 import NouveauProgrammePanel from './NouveauProgrammePanel'
 import { getNouveauItemsForGrade } from './nouveauProgrammeData'
+import PrintButton from './PrintButton'
 import { getCalendarEvents } from '@/app/dashboard/school-calendar/actions'
 
 export default async function AnnualPlanPage({
@@ -111,10 +112,11 @@ export default async function AnnualPlanPage({
 
   const subjectLabel = isMultiSubject ? 'Toutes les matières' : (plan.subjects as any)?.name_fr
   const modelTag = isParEtape ? ' · Par étape' : isParTheme ? ' · Par thème' : ''
+  const planLabel = `${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year}${plan.title ? ` · ${plan.title}` : ''}${modelTag}`
 
   return (
     <main className="min-h-screen">
-      <nav className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: 'var(--color-nav)' }}>
+      <nav className="px-6 py-4 flex items-center gap-3 print:hidden" style={{ backgroundColor: 'var(--color-nav)' }}>
         <Link href="/dashboard/annual" className="text-white/70 hover:text-white text-sm">← Mes planifications</Link>
         <span className="text-white/40">/</span>
         <div className="flex-1">
@@ -151,6 +153,7 @@ export default async function AnnualPlanPage({
           >
             ⬆ Importer
           </Link>
+          <PrintButton />
         </div>
       </nav>
 
@@ -169,6 +172,7 @@ export default async function AnnualPlanPage({
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
           nouveauItems={nouveauItems ?? undefined}
+          planLabel={planLabel}
         />
       ) : isParEtape ? (
         <EtapePlanningGrid
@@ -179,6 +183,7 @@ export default async function AnnualPlanPage({
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
           nouveauItems={nouveauItems ?? undefined}
+          planLabel={planLabel}
         />
       ) : (
         <PlanningGrid
@@ -192,6 +197,7 @@ export default async function AnnualPlanPage({
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
           nouveauItems={nouveauItems ?? undefined}
+          planLabel={planLabel}
         />
       )}
     </main>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import ThemeGrid from './ThemeGrid'
+import PrintButton from '../../PrintButton'
 import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 function formatDateRange(start: string, end: string) {
@@ -88,7 +89,7 @@ export default async function ThemeDetailPage({
 
   return (
     <main className="min-h-screen">
-      <nav className="px-6 py-4 flex items-center gap-3 flex-wrap" style={{ backgroundColor: 'var(--color-nav)' }}>
+      <nav className="px-6 py-4 flex items-center gap-3 flex-wrap print:hidden" style={{ backgroundColor: 'var(--color-nav)' }}>
         <Link href="/dashboard/planning-model/par-theme" className="text-white/70 hover:text-white text-sm">← Par thème</Link>
         <span className="text-white/40">/</span>
         <Link href={`/dashboard/annual/${planId}`} className="text-white/70 hover:text-white text-sm">{subjectLabel}</Link>
@@ -104,6 +105,7 @@ export default async function ThemeDetailPage({
         </div>
         <span className="text-sm text-white/60">{formatDateRange(themeConfig.start_date, themeConfig.end_date)}</span>
         <span className="text-sm text-white/50">{(plan.grade_levels as any)?.label_fr} · {plan.school_year}</span>
+        <PrintButton />
       </nav>
 
       <ThemeGrid
@@ -116,6 +118,7 @@ export default async function ThemeDetailPage({
         weekNotes={(weekNotes ?? []) as any[]}
         planContentActivities={(planContentActivities ?? []) as any[]}
         calendarEvents={calendarEvents}
+        planLabel={`${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year} · ${themeConfig.name}`}
       />
     </main>
   )

@@ -122,6 +122,7 @@ type Props = {
   availableActivities: AvailableActivity[]
   planContentActivities?: PlanContentActivity[]
   periodCount?: number
+  planLabel?: string
 }
 
 function getSubjectInfo(item: ContentItem) {
@@ -130,7 +131,7 @@ function getSubjectInfo(item: ContentItem) {
   return { name: subj?.name_fr ?? item.competencies?.name_fr ?? 'Contenu', color, bg: `rgba(${hexToRgb(color)}, 0.12)` }
 }
 
-export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods, dayNotes, weekStickers, periodTimes, weekActivities: weekActivitiesInit, availableActivities, planContentActivities = [], periodCount: periodCountInit = 6 }: Props) {
+export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods, dayNotes, weekStickers, periodTimes, weekActivities: weekActivitiesInit, availableActivities, planContentActivities = [], periodCount: periodCountInit = 6, planLabel = '' }: Props) {
   const [localPeriods, setLocalPeriods]           = useState<DayPeriod[]>(dayPeriods.map(p => ({ ...p, is_special_activity: p.is_special_activity ?? false })))
   const [selected, setSelected]                   = useState<Selected | null>(null)
   const [selectedSticker, setSelectedSticker]     = useState<string | null>(null)
@@ -303,7 +304,8 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
   const popupSpecial = popupSlot?.is_special_activity ?? false
 
   return (
-    <div className="flex h-[calc(100vh-65px)]">
+    <>
+    <div className="flex h-[calc(100vh-65px)] print:hidden">
 
       {/* ── Sidebar ──────────────────────────────────────────── */}
       <aside className="w-64 shrink-0 bg-white border-r flex flex-col">
@@ -903,5 +905,43 @@ export default function WeeklyGrid({ planId, weekStart, contentItems, dayPeriods
       )}
 
     </div>
+
+    {/* ── Print layout ─────────────────────────────────────────── */}
+    <div className="hidden print:block p-8">
+      <style>{`@media print { @page { size: A4 landscape; margin: 1.5cm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`}</style>
+      <h1 className="text-base font-bold text-gray-900 mb-5">{planLabel}</h1>
+      <div className="grid grid-cols-5 gap-3">
+        {DAY_STYLES.map((day, dayIdx) => {
+          const dayNum = dayIdx + 1
+          const note = weekendNotes[dayNum]
+          return (
+            <div key={dayNum} className="border rounded-lg overflow-hidden">
+              <div className="px-2 py-1.5" style={{ backgroundColor: day.bg }}>
+                <p className="font-bold text-xs" style={{ color: day.text }}>{day.label}</p>
+              </div>
+              <div className="divide-y">
+                {Array.from({ length: localPeriodCount }, (_, i) => {
+                  const period = localPeriods.find(p => p.day_of_week === dayNum && p.period_number === i + 1)
+                  const item = period?.content_item_id ? contentItems.find(ci => ci.id === period.content_item_id) : null
+                  return (
+                    <div key={i} className="px-2 py-1">
+                      <p className="text-[0.6rem] text-gray-400">P{i + 1}</p>
+                      {period?.is_special_activity
+                        ? <p className="text-[0.7rem] text-amber-700">Activité spéciale</p>
+                        : item
+                          ? <p className="text-[0.7rem] leading-snug text-gray-700">{item.name_fr}</p>
+                          : <p className="text-[0.7rem] text-gray-300">—</p>
+                      }
+                    </div>
+                  )
+                })}
+              </div>
+              {note && <p className="px-2 py-1 text-[0.65rem] text-gray-500 border-t italic">{note}</p>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+    </>
   )
 }

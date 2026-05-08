@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import MonthlyGrid from './MonthlyGrid'
 import EvalLinksSection from '../../EvalLinksSection'
+import PrintButton from '../../PrintButton'
 import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const MONTH_LABELS: Record<number, string> = {
@@ -87,7 +88,7 @@ export default async function MonthPage({
 
   return (
     <main className="min-h-screen">
-      <nav className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: 'var(--color-nav)' }}>
+      <nav className="px-6 py-4 flex items-center gap-3 print:hidden" style={{ backgroundColor: 'var(--color-nav)' }}>
         <Link href="/dashboard/monthly" className="text-white/70 hover:text-white text-sm">← Mensuel</Link>
         <span className="text-white/40">/</span>
         <Link href={`/dashboard/annual/${planId}`} className="text-white/70 hover:text-white text-sm">
@@ -104,6 +105,7 @@ export default async function MonthPage({
           ) : <span className="text-white/20 text-sm">›</span>}
         </div>
         <span className="text-sm text-white/60">{(plan.grade_levels as any)?.label_fr} · {plan.school_year}</span>
+        <PrintButton />
         <div className="flex gap-1">
           <Link href={baseHref}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${activeTab === 'contenu' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}>
@@ -130,6 +132,7 @@ export default async function MonthPage({
           weekNotes={(weekNotes ?? []) as any[]}
           planContentActivities={(planContentActivities ?? []) as any[]}
           calendarEvents={calendarEvents}
+          planLabel={`${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year} · ${MONTH_LABELS[month]}`}
         />
       )}
     </main>

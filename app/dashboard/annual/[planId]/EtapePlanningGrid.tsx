@@ -49,6 +49,7 @@ type Props = {
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
   nouveauItems?: NouveauCycleItems
+  planLabel?: string
 }
 
 function formatDateRange(start: string, end: string) {
@@ -60,7 +61,7 @@ function formatDateRange(start: string, end: string) {
   return `${fmt(start)} – ${fmt(end)}`
 }
 
-export default function EtapePlanningGrid({ planId, contentItems, assignments, etapeConfigs, planContentActivities = [], calendarEvents = [], nouveauItems }: Props) {
+export default function EtapePlanningGrid({ planId, contentItems, assignments, etapeConfigs, planContentActivities = [], calendarEvents = [], nouveauItems, planLabel = '' }: Props) {
   const [localAssignments, setLocalAssignments] = useState<EtapeAssignment[]>(assignments)
   const [localPca, setLocalPca] = useState<PlanContentActivity[]>(planContentActivities)
   const [selected, setSelected] = useState<ContentItem | null>(null)
@@ -116,7 +117,8 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
   const isAssignMode = !!selected
 
   return (
-    <div className="flex h-[calc(100vh-65px)]">
+    <>
+    <div className="flex h-[calc(100vh-65px)] print:hidden">
 
       {/* Sidebar */}
       <aside className="w-72 shrink-0 bg-white border-r flex flex-col">
@@ -339,5 +341,40 @@ export default function EtapePlanningGrid({ planId, contentItems, assignments, e
         </div>
       </div>
     </div>
+
+    {/* ── Print layout ─────────────────────────────────────────── */}
+    <div className="hidden print:block p-8">
+      <style>{`@media print { @page { size: A4 landscape; margin: 1.5cm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`}</style>
+      <h1 className="text-base font-bold text-gray-900 mb-4">{planLabel}</h1>
+      <div className="grid grid-cols-3 gap-6">
+        {ETAPE_COLORS.map(({ bg, text, label }, i) => {
+          const etapeNumber = i + 1
+          const config = etapeConfigs.find(c => c.etape_number === etapeNumber)
+          const items = contentItems.filter(item =>
+            localAssignments.some(a => a.etape_number === etapeNumber && a.content_item_id === item.id)
+          )
+          return (
+            <div key={etapeNumber} className="border rounded-lg overflow-hidden">
+              <div className="px-3 py-2" style={{ backgroundColor: bg }}>
+                <p className="font-bold text-sm" style={{ color: text }}>{label}</p>
+                {config && <p className="text-xs" style={{ color: text, opacity: 0.7 }}>{formatDateRange(config.start_date, config.end_date)}</p>}
+              </div>
+              <div className="p-2 flex flex-col gap-1">
+                {items.length === 0
+                  ? <p className="text-xs text-gray-400 italic">—</p>
+                  : items.map(item => (
+                    <div key={item.id} className="flex items-start gap-1.5">
+                      <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ backgroundColor: item.competencies?.color ?? '#94A3B8' }} />
+                      <p className="text-xs leading-snug text-gray-700">{item.name_fr}</p>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+    </>
   )
 }

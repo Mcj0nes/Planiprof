@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import WeeklyGrid from './WeeklyGrid'
 import EvalLinksSection from '../../EvalLinksSection'
+import PrintButton from '../../PrintButton'
 import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const MONTH_ABBR: Record<number, string> = {
@@ -159,13 +160,14 @@ export default async function WeekPage({
 
   return (
     <main className="min-h-screen">
-      <nav className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: 'var(--color-nav)' }}>
+      <nav className="px-6 py-4 flex items-center gap-3 print:hidden" style={{ backgroundColor: 'var(--color-nav)' }}>
         <Link href={`/dashboard/annual/${planId}/month/${backMonth}`} className="text-white/70 hover:text-white text-sm">
           ← {subjectLabel}
         </Link>
         <span className="text-white/40">/</span>
         <span className="text-lg font-bold text-white flex-1">{getWeekLabel(weekStart)}</span>
         <span className="text-sm text-white/60">{(plan.grade_levels as any)?.label_fr} · {plan.school_year}</span>
+        <PrintButton />
         <div className="flex gap-1">
           <Link href={baseHref}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${activeTab === 'contenu' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}>
@@ -205,6 +207,7 @@ export default async function WeekPage({
           availableActivities={availableActivities}
           planContentActivities={(pcaRes.data ?? []) as any[]}
           periodCount={(plan as any).period_count ?? 6}
+          planLabel={`${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year} · ${getWeekLabel(weekStart)}`}
         />
       )}
     </main>

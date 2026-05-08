@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import EtapeGrid from './EtapeGrid'
+import PrintButton from '../../PrintButton'
 import { getCalendarEventsInRange } from '@/app/dashboard/school-calendar/actions'
 
 const ETAPE_LABELS = ['', 'Étape 1', 'Étape 2', 'Étape 3']
@@ -83,7 +84,7 @@ export default async function EtapeDetailPage({
 
   return (
     <main className="min-h-screen">
-      <nav className="px-6 py-4 flex items-center gap-3 flex-wrap" style={{ backgroundColor: 'var(--color-nav)' }}>
+      <nav className="px-6 py-4 flex items-center gap-3 flex-wrap print:hidden" style={{ backgroundColor: 'var(--color-nav)' }}>
         <Link href="/dashboard/planning-model/par-etape" className="text-white/70 hover:text-white text-sm">← Par étape</Link>
         <span className="text-white/40">/</span>
         <Link href={`/dashboard/annual/${planId}`} className="text-white/70 hover:text-white text-sm">{subjectLabel}</Link>
@@ -99,6 +100,7 @@ export default async function EtapeDetailPage({
         </div>
         <span className="text-sm text-white/60">{formatDateRange(etapeConfig.start_date, etapeConfig.end_date)}</span>
         <span className="text-sm text-white/50">{(plan.grade_levels as any)?.label_fr} · {plan.school_year}</span>
+        <PrintButton />
       </nav>
 
       <EtapeGrid
@@ -111,6 +113,7 @@ export default async function EtapeDetailPage({
         weekNotes={(weekNotes ?? []) as any[]}
         planContentActivities={(planContentActivities ?? []) as any[]}
         calendarEvents={calendarEvents}
+        planLabel={`${subjectLabel} · ${(plan.grade_levels as any)?.label_fr} · ${plan.school_year} · ${ETAPE_LABELS[etapeNumber]}`}
       />
     </main>
   )

@@ -144,6 +144,7 @@ type Props = {
   planContentActivities?: PlanContentActivity[]
   calendarEvents?: CalendarEvent[]
   nouveauItems?: NouveauCycleItems
+  planLabel?: string
 }
 
 export default function PlanningGrid({
@@ -157,6 +158,7 @@ export default function PlanningGrid({
   planContentActivities = [],
   calendarEvents = [],
   nouveauItems,
+  planLabel = '',
 }: Props) {
   const [localAssignments, setLocalAssignments] = useState<Assignment[]>(assignments)
   const [localProjectAssignments, setLocalProjectAssignments] = useState<ProjectAssignment[]>(projectAssignments)
@@ -535,7 +537,8 @@ export default function PlanningGrid({
 
   // ── Main render ──────────────────────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-65px)]">
+    <>
+    <div className="flex h-[calc(100vh-65px)] print:hidden">
 
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside className={`${isMultiSubject ? 'w-80' : 'w-72'} shrink-0 bg-white border-r flex flex-col`}>
@@ -1041,6 +1044,51 @@ export default function PlanningGrid({
 
       </div>
     </div>
+
+    {/* ── Print layout ─────────────────────────────────────────── */}
+    <div className="hidden print:block p-8">
+      <style>{`@media print { @page { size: A4 landscape; margin: 1.5cm; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`}</style>
+      <h1 className="text-base font-bold text-gray-900 mb-5">{planLabel}</h1>
+      <div className="grid grid-cols-5 gap-3 mb-4">
+        {SCHOOL_MONTHS.map(({ month, label, bg, text }) => {
+          const items = contentItems.filter(i => localAssignments.some(a => a.month === month && a.content_item_id === i.id))
+          return (
+            <div key={month} className="border rounded-lg overflow-hidden">
+              <div className="px-2 py-1.5" style={{ backgroundColor: bg }}>
+                <p className="font-bold text-xs" style={{ color: text }}>{label}</p>
+              </div>
+              <div className="p-2 flex flex-col gap-1">
+                {items.length === 0
+                  ? <p className="text-xs text-gray-400 italic">—</p>
+                  : items.map(item => (
+                    <div key={item.id} className="flex items-start gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full mt-1 shrink-0" style={{ backgroundColor: item.competencies?.color ?? '#94A3B8' }} />
+                      <p className="text-[0.7rem] leading-snug text-gray-700">{item.name_fr}</p>
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {localAssignments.some(a => a.month === 8) && (
+        <div className="border rounded-lg overflow-hidden w-48">
+          <div className="px-2 py-1.5" style={{ backgroundColor: AOUT_MONTH.bg }}>
+            <p className="font-bold text-xs" style={{ color: AOUT_MONTH.text }}>Août</p>
+          </div>
+          <div className="p-2 flex flex-col gap-1">
+            {contentItems.filter(i => localAssignments.some(a => a.month === 8 && a.content_item_id === i.id)).map(item => (
+              <div key={item.id} className="flex items-start gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full mt-1 shrink-0" style={{ backgroundColor: item.competencies?.color ?? '#94A3B8' }} />
+                <p className="text-[0.7rem] leading-snug text-gray-700">{item.name_fr}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+    </>
   )
 }
 
