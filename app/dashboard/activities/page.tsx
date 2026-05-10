@@ -11,7 +11,7 @@ export default async function ActivitiesPage() {
   // All subjects
   const { data: subjects } = await supabase
     .from('subjects')
-    .select('id, name_fr, color')
+    .select('id, name_fr, slug, color')
     .eq('is_active', true)
     .order('name_fr')
 
@@ -64,6 +64,7 @@ export default async function ActivitiesPage() {
       id: att.id, file_name: att.file_name, file_path: att.file_path,
       file_type: att.file_type, file_size: att.file_size,
     })),
+    documents:       [] as { id: string; name: string; url: string }[],
     created_at:      a.created_at,
     is_template:     false,
     category:        null as string | null,
@@ -74,41 +75,46 @@ export default async function ActivitiesPage() {
     pda_link:             a.pda_link             ?? null,
   }))
 
-  // Pre-loaded activity templates (with pedagogical detail fields)
-  const { data: rawTemplates } = await supabase
-    .from('activity_templates')
-    .select('id, title, description, subject_id, type_tag, duration_min, grade_level_tag, category, trigger_text, open_question, expected_strategies, observation_criteria, pda_link, created_at, subjects(id, name_fr, color)')
-    .order('category')
-    .order('created_at')
-
-  // Attachments for templates
-  const templateIds = (rawTemplates ?? []).map((t: any) => t.id)
-  const [rawTplAttachmentsRes, rawTplContentLinks] = await Promise.all([
-    templateIds.length > 0
-      ? supabase.from('activity_attachments')
-          .select('id, template_id, file_name, file_path, file_type, file_size')
-          .in('template_id', templateIds)
-      : Promise.resolve({ data: [] }),
-    templateIds.length > 0
-      ? supabase.from('template_content_items')
-          .select('template_id, content_item_id')
-          .in('template_id', templateIds)
-          .eq('user_id', user.id)
-      : Promise.resolve({ data: [] }),
+  const [
+    { data: rawTemplates },
+    { data: rawTplContentLinks },
+    { data: rawTemplateAtts },
+    { data: rawTemplateDocs },
+  ] = await Promise.all([
+    supabase
+      .from('activity_templates')
+      .select('id, title, description, subject_id, type_tag, duration_min, grade_level_tag, category, trigger_text, open_question, expected_strategies, observation_criteria, pda_link, created_at, subjects(id, name_fr, slug, color)')
+      .order('category')
+      .order('created_at'),
+    supabase
+      .from('template_content_items')
+      .select('template_id, content_item_id')
+      .eq('user_id', user.id),
+    supabase
+      .from('activity_attachments')
+      .select('id, template_id, file_name, file_path, file_type, file_size')
+      .not('template_id', 'is', null),
+    supabase
+      .from('template_documents')
+      .select('id, template_id, name, url'),
   ])
 
-  const rawTplAttachments = rawTplAttachmentsRes.data ?? []
-
-  const attachmentsByTemplate: Record<string, any[]> = {}
-  for (const att of rawTplAttachments) {
-    if (!attachmentsByTemplate[(att as any).template_id]) attachmentsByTemplate[(att as any).template_id] = []
-    attachmentsByTemplate[(att as any).template_id].push(att)
-  }
-
   const contentItemsByTemplate: Record<string, number[]> = {}
-  for (const link of (rawTplContentLinks.data ?? []) as any[]) {
+  for (const link of (rawTplContentLinks ?? []) as any[]) {
     if (!contentItemsByTemplate[link.template_id]) contentItemsByTemplate[link.template_id] = []
     contentItemsByTemplate[link.template_id].push(link.content_item_id)
+  }
+
+  const attsByTemplate: Record<string, any[]> = {}
+  for (const att of (rawTemplateAtts ?? []) as any[]) {
+    if (!attsByTemplate[att.template_id]) attsByTemplate[att.template_id] = []
+    attsByTemplate[att.template_id].push(att)
+  }
+
+  const docsByTemplate: Record<string, any[]> = {}
+  for (const doc of (rawTemplateDocs ?? []) as any[]) {
+    if (!docsByTemplate[doc.template_id]) docsByTemplate[doc.template_id] = []
+    docsByTemplate[doc.template_id].push(doc)
   }
 
   const templates = (rawTemplates ?? []).map((t: any) => ({
@@ -122,9 +128,12 @@ export default async function ActivitiesPage() {
     grade_level_tag: t.grade_level_tag,
     grade_level_ids: [] as number[],
     content_item_ids: (contentItemsByTemplate[t.id] ?? []) as number[],
-    attachments:     (attachmentsByTemplate[t.id] ?? []).map((att: any) => ({
+    attachments:     (attsByTemplate[t.id] ?? []).map((att: any) => ({
       id: att.id, file_name: att.file_name, file_path: att.file_path,
       file_type: att.file_type, file_size: att.file_size,
+    })),
+    documents:       (docsByTemplate[t.id] ?? []).map((doc: any) => ({
+      id: doc.id, name: doc.name, url: doc.url,
     })),
     created_at:      t.created_at,
     is_template:     true,

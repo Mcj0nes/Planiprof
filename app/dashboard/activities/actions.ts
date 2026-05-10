@@ -310,3 +310,26 @@ export async function deleteAttachment(attachmentId: string, filePath: string) {
   await supabase.from('activity_attachments').delete()
     .eq('id', attachmentId).eq('user_id', user.id)
 }
+
+export async function getTemplateFiles(templateId: string): Promise<{
+  attachments: { id: string; file_name: string; file_path: string; file_type: string | null; file_size: number | null }[]
+  documents:   { id: string; name: string; url: string }[]
+}> {
+  const supabase = await createClient()
+  const [{ data: atts, error: attsErr }, { data: docs, error: docsErr }] = await Promise.all([
+    supabase.from('activity_attachments').select('id, file_name, file_path, file_type, file_size').eq('template_id', templateId),
+    supabase.from('template_documents').select('id, name, url').eq('template_id', templateId),
+  ])
+  return {
+    attachments: (atts ?? []).map((a: any) => ({ id: a.id, file_name: a.file_name, file_path: a.file_path, file_type: a.file_type, file_size: a.file_size })),
+    documents:   (docs ?? []).map((d: any) => ({ id: d.id, name: d.name, url: d.url })),
+  }
+}
+
+export async function deleteTemplateDocument(docId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non authentifié')
+
+  await supabase.from('template_documents').delete().eq('id', docId)
+}

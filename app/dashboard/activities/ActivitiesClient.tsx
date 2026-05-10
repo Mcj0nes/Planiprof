@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
-import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, addTemplateContentItem, removeTemplateContentItem, autoMatchAllActivities } from './actions'
+import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, deleteTemplateDocument, getTemplateFiles, addTemplateContentItem, removeTemplateContentItem, autoMatchAllActivities } from './actions'
 
 // ── Types ──────────────────────────────────────────────────────
 
-type Subject = { id: number; name_fr: string; color: string | null }
+type Subject = { id: number; name_fr: string; slug: string | null; color: string | null }
 type GradeLevel = { id: number; label_fr: string }
 
 type ContentItem = {
@@ -27,6 +27,12 @@ type Attachment = {
   file_size: number | null
 }
 
+type TemplateDocument = {
+  id: string
+  name: string
+  url: string
+}
+
 type Activity = {
   id: string
   title: string
@@ -39,6 +45,7 @@ type Activity = {
   grade_level_ids: number[]
   content_item_ids: number[]
   attachments: Attachment[]
+  documents: TemplateDocument[]
   created_at: string
   is_template: boolean
   category: string | null
@@ -83,6 +90,23 @@ const GRADE_LEVELS = [
   'Maternelle 4 ans', 'Maternelle 5 ans',
   '1re année', '2e année', '3e année', '4e année', '5e année', '6e année',
 ]
+
+const PRESCOLAIRE_TAGS = new Set(['Maternelle 4 ans', 'Maternelle 5 ans'])
+const SPECIALIST_SLUGS = new Set(['anglais', 'musique', 'educ-physique'])
+const PRIMAIRE_TAGS = new Set([
+  '1re année', '2e année', '3e année', '4e année', '5e année', '6e année',
+  '1re-2e année', '3e-4e année', '5e-6e année',
+])
+
+type EducLevel = 'préscolaire' | 'primaire'
+
+function activityLevel(a: Activity): EducLevel | null {
+  const tag = a.grade_level_tag
+  if (!tag) return null
+  if (PRESCOLAIRE_TAGS.has(tag)) return 'préscolaire'
+  if (PRIMAIRE_TAGS.has(tag)) return 'primaire'
+  return null
+}
 
 function gradeMatches(activityTag: string | null, filterTag: string): boolean {
   if (!activityTag) return false
@@ -467,11 +491,12 @@ function DetailSection({ label, content }: { label: string; content: string | nu
   )
 }
 
-function CauserieDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isUploading, onOpenFile, contentItems, onAddContent, onRemoveContent }: {
+function CauserieDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, onDeleteDoc, isUploading, onOpenFile, contentItems, onAddContent, onRemoveContent }: {
   activity: Activity
   onClose: () => void
   onUploadFile: (file: File) => void
   onDeleteAtt: (attId: string, filePath: string) => void
+  onDeleteDoc: (docId: string) => void
   isUploading: boolean
   onOpenFile: (filePath: string) => void
   contentItems: ContentItem[]
@@ -486,10 +511,10 @@ function CauserieDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isU
         <div className="flex items-start gap-4 p-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap gap-1.5 mb-2">
-              <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(45,212,191,0.15)', color: '#2dd4bf' }}>Causerie</span>
+              <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(45,212,191,0.15)', color: '#2dd4bf' }}>{activity.type_tag ?? 'Causerie'}</span>
               {activity.category && (
                 <span className="text-[0.65rem] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: '#9ca3af' }}>
-                  {activity.category.replace('Causerie — ', '')}
+                  {activity.category.replace(/^(Causerie — |Dictée — |Dictée négociée — |Math en 3 temps — )/, '')}
                 </span>
               )}
               {activity.grade_level_tag && (
@@ -508,10 +533,20 @@ function CauserieDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isU
 
         <div className="p-6 space-y-5">
           {activity.description && <DetailSection label="Description" content={activity.description} />}
-          <DetailSection label="Amorce / Déclencheur" content={activity.trigger_text} />
-          <DetailSection label="Question ouverte" content={activity.open_question} />
-          <DetailSection label="Stratégies attendues" content={activity.expected_strategies} />
-          <DetailSection label="Critères d'observation" content={activity.observation_criteria} />
+          <DetailSection
+            label={activity.type_tag === 'Dictée' ? 'À observer avec la classe' : activity.type_tag === 'Dictée négociée' ? 'Texte à dicter' : 'Amorce / Déclencheur'}
+            content={activity.trigger_text}
+          />
+          <DetailSection
+            label={activity.type_tag === 'Dictée' ? 'Pièges pour l\'enseignant' : activity.type_tag === 'Dictée négociée' ? 'Phrase de départ et questions de négociation' : 'Question ouverte'}
+            content={activity.open_question}
+          />
+          {activity.type_tag !== 'Dictée' && (
+            <>
+              <DetailSection label={activity.type_tag === 'Dictée négociée' ? 'Règles grammaticales à mobiliser' : 'Stratégies attendues'} content={activity.expected_strategies} />
+              <DetailSection label={activity.type_tag === 'Dictée négociée' ? 'Erreurs anticipées' : 'Critères d\'observation'} content={activity.observation_criteria} />
+            </>
+          )}
           {activity.pda_link && (
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: '#6b7280' }}>Lien avec le PDA</p>
@@ -582,7 +617,22 @@ function CauserieDetailModal({ activity, onClose, onUploadFile, onDeleteAtt, isU
                   </button>
               }
             </div>
-            {activity.attachments.length === 0 && (
+            {activity.documents.map(doc => {
+              const fileName = doc.url.split('/').pop() ?? ''
+              const downloadHref = `/api/documents/download?file=${encodeURIComponent(fileName)}&name=${encodeURIComponent(doc.name)}`
+              return (
+                <div key={doc.id} className="flex items-center gap-2 group py-1">
+                  <span className="text-sm">📄</span>
+                  <a href={downloadHref} download
+                    className="flex-1 text-sm truncate transition hover:underline" style={{ color: '#d1d5db' }}>
+                    {doc.name}
+                  </a>
+                  <button onClick={() => onDeleteDoc(doc.id)}
+                    className="hover:text-red-400 transition opacity-0 group-hover:opacity-100 shrink-0 text-base leading-none" style={{ color: '#374151' }}>×</button>
+                </div>
+              )
+            })}
+            {activity.attachments.length === 0 && activity.documents.length === 0 && (
               <p className="text-xs" style={{ color: '#4b5563' }}>Aucun fichier joint · PDF, PowerPoint, Word, images (max 50 Mo)</p>
             )}
             {activity.attachments.map(att => (
@@ -636,6 +686,33 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   const [detailRegular, setDetailRegular]       = useState<Activity | null>(null)
   const [uploadError, setUploadError]           = useState<string | null>(null)
   const [hoveredCardId, setHoveredCardId]       = useState<string | null>(null)
+  const [levelFilter, setLevelFilterRaw]        = useState<EducLevel | null>(null)
+
+  // When the detail modal opens for a template, re-fetch files to catch any uploaded
+  // since the page last loaded (page.tsx pre-loads all files at render time).
+  useEffect(() => {
+    if (!detailActivity?.is_template) return
+    const id = detailActivity.id
+    getTemplateFiles(id).then(({ attachments, documents }) => {
+      setDetailActivity(prev => {
+        if (!prev || prev.id !== id) return prev
+        if (attachments.length === 0 && documents.length === 0 && prev.attachments.length > 0) return prev
+        return { ...prev, attachments, documents }
+      })
+      setLocalTemplates(prev => prev.map(t => {
+        if (t.id !== id) return t
+        if (attachments.length === 0 && documents.length === 0 && t.attachments.length > 0) return t
+        return { ...t, attachments, documents }
+      }))
+    }).catch(() => {})
+  }, [detailActivity?.id])
+
+  function setLevelFilter(level: EducLevel | null) {
+    setLevelFilterRaw(level)
+    setSubjectFilterRaw(null)
+    setSelectedContents([])
+    setNiveauFilter(null)
+  }
 
   function setSubjectFilter(id: number | null) {
     setSubjectFilterRaw(id)
@@ -714,6 +791,15 @@ export default function ActivitiesClient({ activities: initial, templates: initi
     await deleteAttachment(attId, filePath)
   }
 
+  async function handleDeleteTemplateDocument(templateId: string, docId: string) {
+    setLocalTemplates(prev => prev.map(t =>
+      t.id === templateId ? { ...t, documents: t.documents.filter(d => d.id !== docId) } : t
+    ))
+    setDetailActivity(prev => prev?.id === templateId
+      ? { ...prev, documents: prev.documents.filter(d => d.id !== docId) } : prev)
+    await deleteTemplateDocument(docId)
+  }
+
   async function handleOpenFile(filePath: string) {
     const supabase = createBrowserClient()
     const { data } = await supabase.storage.from(BUCKET).createSignedUrl(filePath, 3600)
@@ -740,6 +826,7 @@ export default function ActivitiesClient({ activities: initial, templates: initi
       duration_min:    createForm.duration_min ? parseInt(createForm.duration_min) : null,
       content_item_ids: createContentIds,
       attachments:     [],
+      documents:       [],
       created_at:      new Date().toISOString(),
       is_template:     false, category: null,
       trigger_text: createForm.trigger_text.trim() || null,
@@ -834,7 +921,13 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   const usedSubjects   = subjects.filter(s => usedSubjectIds.includes(s.id))
   const subjectObj     = subjectFilter !== null ? usedSubjects.find(s => s.id === subjectFilter) ?? null : null
 
-  const usedNiveaux = GRADE_LEVELS.filter(l =>
+  const levelGrades = levelFilter === 'préscolaire'
+    ? GRADE_LEVELS.filter(l => PRESCOLAIRE_TAGS.has(l))
+    : levelFilter === 'primaire'
+    ? GRADE_LEVELS.filter(l => PRIMAIRE_TAGS.has(l))
+    : GRADE_LEVELS
+
+  const usedNiveaux = levelGrades.filter(l =>
     allActivities.some(a => {
       if (subjectFilter !== null && a.subject_id !== subjectFilter) return false
       if (a.grade_level_ids.length > 0)
@@ -874,13 +967,13 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   // Only show activities once a subject is chosen; content filter hides causeries
   const filtered = subjectFilter === null ? [] : allActivities.filter(a => {
     if (a.subject_id !== subjectFilter) return false
+    if (levelFilter !== null && activityLevel(a) !== null && activityLevel(a) !== levelFilter) return false
     if (niveauFilter !== null) {
       if (a.grade_level_ids.length > 0) {
         if (!a.grade_level_ids.some(id => gradeLevels.find(gl => gl.id === id)?.label_fr === niveauFilter)) return false
       } else if (!gradeMatches(a.grade_level_tag, niveauFilter)) return false
     }
-    if (selectedContents.length > 0) {
-      if (a.is_template) return false
+    if (selectedContents.length > 0 && !a.is_template) {
       if (!a.content_item_ids.some(id => selectedContents.includes(id))) return false
     }
     if (search) {
@@ -985,7 +1078,7 @@ export default function ActivitiesClient({ activities: initial, templates: initi
                       <div className="space-y-1.5 mt-1.5">
                         {activity.category && (
                           <p className="text-[0.65rem] text-teal-500 font-semibold uppercase tracking-wide">
-                            {activity.category.replace('Causerie — ', '')}
+                            {activity.category.replace(/^(Causerie — |Dictée — |Dictée négociée — |Math en 3 temps — )/, '')}
                           </p>
                         )}
                         {activity.trigger_text && (
@@ -1196,38 +1289,78 @@ export default function ActivitiesClient({ activities: initial, templates: initi
           </button>
         </div>
         {createFormPanel}
-        <div className="text-center pt-4 pb-8">
-          <div className="text-5xl mb-4">📚</div>
-          <h2 className="text-xl font-bold text-gray-700 mb-2">Quelle matière souhaitez-vous planifier?</h2>
-          <p className="text-sm text-gray-400">Choisissez une matière pour accéder aux activités correspondantes</p>
+        {/* ── Level tabs ── */}
+        <div className="flex justify-center gap-3 mb-8">
+          {(['préscolaire', 'primaire'] as EducLevel[]).map(level => (
+            <button key={level} onClick={() => setLevelFilter(levelFilter === level ? null : level)}
+              className="px-6 py-2.5 rounded-full text-sm font-bold border-2 transition-all"
+              style={levelFilter === level
+                ? { backgroundColor: 'var(--color-nav)', borderColor: 'var(--color-nav)', color: '#fff' }
+                : { backgroundColor: '#fff', borderColor: '#e5e7eb', color: '#374151' }}>
+              {level === 'préscolaire' ? '🌱 Préscolaire' : '📚 Primaire'}
+            </button>
+          ))}
         </div>
-        {subjects.length === 0 ? (
-          <div className="text-center py-8 text-sm text-gray-400">
-            Aucune matière disponible pour le moment.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {subjects.map(s => {
-              const count = allActivities.filter(a => a.subject_id === s.id).length
-              return (
-                <button key={s.id} onClick={() => setSubjectFilter(s.id)}
-                  className="flex flex-col items-center gap-3 px-6 py-6 rounded-2xl border-2 hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-95 w-full"
-                  style={{ borderColor: s.color ?? '#94A3B8', backgroundColor: `${s.color ?? '#94A3B8'}0D` }}>
-                  <div className="w-10 h-10 rounded-xl shadow-sm" style={{ backgroundColor: s.color ?? '#94A3B8' }} />
-                  <span className="text-sm font-bold text-center" style={{ color: s.color ?? '#374151' }}>{s.name_fr}</span>
-                  {count > 0 && (
-                    <span className="text-[0.65rem] font-medium" style={{ color: s.color ?? '#6b7280' }}>{count} activité{count > 1 ? 's' : ''}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
+
+        {(() => {
+          const showPresco = !levelFilter || levelFilter === 'préscolaire'
+          const showPrim   = !levelFilter || levelFilter === 'primaire'
+
+          type Section = { key: string; label: string; level: EducLevel; tagSet: Set<string>; subs: Subject[] }
+          const sections: Section[] = []
+
+          if (showPresco) {
+            const subs = usedSubjects.filter(s =>
+              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRESCOLAIRE_TAGS.has(a.grade_level_tag))
+            )
+            if (subs.length > 0) sections.push({ key: 'préscolaire', label: '🌱 Préscolaire', level: 'préscolaire', tagSet: PRESCOLAIRE_TAGS, subs })
+          }
+
+          if (showPrim) {
+            const general = usedSubjects.filter(s =>
+              !SPECIALIST_SLUGS.has(s.slug ?? '') &&
+              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRIMAIRE_TAGS.has(a.grade_level_tag))
+            )
+            if (general.length > 0) sections.push({ key: 'généraliste', label: '📚 Primaire — Généraliste', level: 'primaire', tagSet: PRIMAIRE_TAGS, subs: general })
+
+            const special = usedSubjects.filter(s =>
+              SPECIALIST_SLUGS.has(s.slug ?? '') &&
+              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRIMAIRE_TAGS.has(a.grade_level_tag))
+            )
+            if (special.length > 0) sections.push({ key: 'spécialiste', label: '🎓 Primaire — Spécialiste', level: 'primaire', tagSet: PRIMAIRE_TAGS, subs: special })
+          }
+
+          return sections.map(({ key, label, level, tagSet, subs }) => (
+            <div key={key} className="mb-10">
+              <h2 className="text-base font-bold text-gray-600 mb-4 tracking-wide">{label}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {subs.map(s => {
+                  const count = allActivities.filter(a =>
+                    a.subject_id === s.id && a.grade_level_tag && tagSet.has(a.grade_level_tag)
+                  ).length
+                  return (
+                    <button key={s.id}
+                      onClick={() => { setLevelFilterRaw(level); setSubjectFilter(s.id) }}
+                      className="flex flex-col items-center gap-3 px-6 py-6 rounded-2xl border-2 hover:shadow-lg transition-all hover:-translate-y-0.5 active:scale-95 w-full"
+                      style={{ borderColor: s.color ?? '#94A3B8', backgroundColor: `${s.color ?? '#94A3B8'}0D` }}>
+                      <div className="w-10 h-10 rounded-xl shadow-sm" style={{ backgroundColor: s.color ?? '#94A3B8' }} />
+                      <span className="text-sm font-bold text-center" style={{ color: s.color ?? '#374151' }}>{s.name_fr}</span>
+                      {count > 0 && (
+                        <span className="text-[0.65rem] font-medium" style={{ color: s.color ?? '#6b7280' }}>{count} activité{count > 1 ? 's' : ''}</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))
+        })()}
         {detailActivity && (
           <CauserieDetailModal
             activity={detailActivity} onClose={() => setDetailActivity(null)}
             onUploadFile={file => handleAddFileToTemplate(detailActivity.id, file)}
             onDeleteAtt={(attId, fp) => handleDeleteTemplateAttachment(detailActivity.id, attId, fp)}
+            onDeleteDoc={docId => handleDeleteTemplateDocument(detailActivity.id, docId)}
             isUploading={uploadingFor.has(detailActivity.id)} onOpenFile={handleOpenFile}
             contentItems={contentItems}
             onAddContent={id => handleToggleTemplateContent(detailActivity.id, id, false)}
@@ -1256,6 +1389,14 @@ export default function ActivitiesClient({ activities: initial, templates: initi
 
       {/* Filter bar */}
       <div className="bg-white rounded-2xl border shadow-sm px-5 py-3.5 mb-5 flex items-center gap-3 flex-wrap">
+        {/* Level pill */}
+        {levelFilter && (
+          <button onClick={() => setLevelFilter(null)}
+            className="text-xs font-bold px-3 py-1 rounded-full border transition hover:opacity-80 shrink-0"
+            style={{ backgroundColor: 'var(--color-nav)', borderColor: 'var(--color-nav)', color: '#fff' }}>
+            {levelFilter === 'préscolaire' ? '🌱 Préscolaire' : '📚 Primaire'} ×
+          </button>
+        )}
         {/* Subject (colored, clickable to go back) */}
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: subjectObj?.color ?? '#94A3B8' }} />
@@ -1312,6 +1453,7 @@ export default function ActivitiesClient({ activities: initial, templates: initi
           activity={detailActivity} onClose={() => setDetailActivity(null)}
           onUploadFile={file => handleAddFileToTemplate(detailActivity.id, file)}
           onDeleteAtt={(attId, fp) => handleDeleteTemplateAttachment(detailActivity.id, attId, fp)}
+          onDeleteDoc={docId => handleDeleteTemplateDocument(detailActivity.id, docId)}
           isUploading={uploadingFor.has(detailActivity.id)} onOpenFile={handleOpenFile}
           contentItems={contentItems}
           onAddContent={id => handleToggleTemplateContent(detailActivity.id, id, false)}
