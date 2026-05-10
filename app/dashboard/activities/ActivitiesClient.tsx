@@ -91,8 +91,9 @@ const GRADE_LEVELS = [
   '1re année', '2e année', '3e année', '4e année', '5e année', '6e année',
 ]
 
-const PRESCOLAIRE_TAGS = new Set(['Maternelle 4 ans', 'Maternelle 5 ans'])
-const SPECIALIST_SLUGS = new Set(['anglais', 'musique', 'educ-physique'])
+const PRESCOLAIRE_TAGS  = new Set(['Maternelle 4 ans', 'Maternelle 5 ans'])
+const PRESCOLAIRE_SLUGS = new Set(['dev-physique', 'dev-affectif', 'dev-social', 'comm-langage', 'decouverte-monde'])
+const SPECIALIST_SLUGS  = new Set(['anglais', 'musique', 'educ-physique'])
 const PRIMAIRE_TAGS = new Set([
   '1re année', '2e année', '3e année', '4e année', '5e année', '6e année',
   '1re-2e année', '3e-4e année', '5e-6e année',
@@ -1310,23 +1311,17 @@ export default function ActivitiesClient({ activities: initial, templates: initi
           const sections: Section[] = []
 
           if (showPresco) {
-            const subs = usedSubjects.filter(s =>
-              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRESCOLAIRE_TAGS.has(a.grade_level_tag))
-            )
+            const subs = subjects.filter(s => PRESCOLAIRE_SLUGS.has(s.slug ?? ''))
             if (subs.length > 0) sections.push({ key: 'préscolaire', label: '🌱 Préscolaire', level: 'préscolaire', tagSet: PRESCOLAIRE_TAGS, subs })
           }
 
           if (showPrim) {
-            const general = usedSubjects.filter(s =>
-              !SPECIALIST_SLUGS.has(s.slug ?? '') &&
-              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRIMAIRE_TAGS.has(a.grade_level_tag))
+            const general = subjects.filter(s =>
+              !PRESCOLAIRE_SLUGS.has(s.slug ?? '') && !SPECIALIST_SLUGS.has(s.slug ?? '')
             )
             if (general.length > 0) sections.push({ key: 'généraliste', label: '📚 Primaire — Généraliste', level: 'primaire', tagSet: PRIMAIRE_TAGS, subs: general })
 
-            const special = usedSubjects.filter(s =>
-              SPECIALIST_SLUGS.has(s.slug ?? '') &&
-              allActivities.some(a => a.subject_id === s.id && a.grade_level_tag && PRIMAIRE_TAGS.has(a.grade_level_tag))
-            )
+            const special = subjects.filter(s => SPECIALIST_SLUGS.has(s.slug ?? ''))
             if (special.length > 0) sections.push({ key: 'spécialiste', label: '🎓 Primaire — Spécialiste', level: 'primaire', tagSet: PRIMAIRE_TAGS, subs: special })
           }
 
