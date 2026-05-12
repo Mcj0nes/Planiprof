@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
-import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, deleteTemplateDocument, getTemplateFiles, addTemplateContentItem, removeTemplateContentItem, autoMatchAllActivities } from './actions'
+import { createActivity, updateActivity, deleteActivity, addAttachment, deleteAttachment, deleteTemplateDocument, addTemplateContentItem, removeTemplateContentItem, autoMatchAllActivities } from './actions'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -688,25 +688,6 @@ export default function ActivitiesClient({ activities: initial, templates: initi
   const [uploadError, setUploadError]           = useState<string | null>(null)
   const [hoveredCardId, setHoveredCardId]       = useState<string | null>(null)
   const [levelFilter, setLevelFilterRaw]        = useState<EducLevel | null>(null)
-
-  // When the detail modal opens for a template, re-fetch files to catch any uploaded
-  // since the page last loaded (page.tsx pre-loads all files at render time).
-  useEffect(() => {
-    if (!detailActivity?.is_template) return
-    const id = detailActivity.id
-    getTemplateFiles(id).then(({ attachments, documents }) => {
-      setDetailActivity(prev => {
-        if (!prev || prev.id !== id) return prev
-        if (attachments.length === 0 && documents.length === 0 && prev.attachments.length > 0) return prev
-        return { ...prev, attachments, documents }
-      })
-      setLocalTemplates(prev => prev.map(t => {
-        if (t.id !== id) return t
-        if (attachments.length === 0 && documents.length === 0 && t.attachments.length > 0) return t
-        return { ...t, attachments, documents }
-      }))
-    }).catch(() => {})
-  }, [detailActivity?.id])
 
   function setLevelFilter(level: EducLevel | null) {
     setLevelFilterRaw(level)
